@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-
+import * as L from 'leaflet';
 import { NgZone } from '@angular/core';
 import { OnInit } from '@angular/core';
 
@@ -75,6 +75,90 @@ insideCampus=false;
   loadedLayers:string[]=[];
   failedLayers:string[]=[];
 
+
+
+
+
+map!:L.Map;
+
+ngAfterViewInit(){
+
+this.map = L.map(
+'campus-map'
+).setView(
+[20.656,-100.405],
+18
+);
+
+L.tileLayer(
+
+'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+
+{
+
+attribution:'OpenStreetMap'
+
+}
+
+).addTo(this.map);
+
+
+const bounds:L.LatLngBoundsExpression=[
+
+[20.658593,-100.406429],
+
+[20.653162,-100.402883]
+
+];
+
+L.imageOverlay(
+
+'assets/maps/frame-campus.svg',
+
+bounds,
+
+{
+
+opacity:0.8
+
+}
+
+).addTo(this.map);
+
+
+navigator.geolocation.watchPosition(
+
+(position)=>{
+
+const lat=
+position.coords.latitude;
+
+const lng=
+position.coords.longitude;
+
+L.circleMarker(
+
+[lat,lng],
+
+{
+
+radius:8,
+
+color:'red'
+
+}
+
+).addTo(this.map);
+
+}
+
+);
+}
+
+
+
+
+
 testGps(){
 
 console.log('button works');
@@ -110,34 +194,62 @@ JSON.stringify(error)
 }
   
   gpsToSvg(
-    lat:number,
-    lng:number
-  ){
+lat:number,
+lng:number
+){
 
-    const normalizedLng =
+const westTop = -100.406429;
+const eastTop = -100.402883;
 
-      (lng-this.MIN_LNG) /
+const westBottom = -100.407434;
+const eastBottom = -100.403767;
 
-      (this.MAX_LNG-this.MIN_LNG);
+const topLat = 20.658593;
+const bottomLat = 20.653162;
 
-    const normalizedLat =
+const verticalFactor =
 
-      (this.MAX_LAT-lat) /
+(topLat-lat) /
 
-      (this.MAX_LAT-this.MIN_LAT);
+(topLat-bottomLat);
 
-    return{
+const leftLng =
 
-      x:
-      normalizedLng*this.MAP_WIDTH,
+westTop +
 
-      y:
-      normalizedLat*this.MAP_HEIGHT
+(verticalFactor *
 
-    };
+(westBottom-westTop));
 
-  }
+const rightLng =
 
+eastTop +
+
+(verticalFactor *
+
+(eastBottom-eastTop));
+
+const horizontalFactor =
+
+(lng-leftLng) /
+
+(rightLng-leftLng);
+
+return{
+
+x:
+horizontalFactor
+*
+this.MAP_WIDTH,
+
+y:
+verticalFactor
+*
+this.MAP_HEIGHT
+
+};
+
+}
   isInsideCampus(
     lat:number,
     lng:number
@@ -178,6 +290,42 @@ JSON.stringify(error)
   }
 
 
+  rotatePoint(
+x:number,
+y:number,
+angle:number
+){
+
+const cx =
+this.MAP_WIDTH/2;
+
+const cy =
+this.MAP_HEIGHT/2;
+
+const radians =
+angle*Math.PI/180;
+
+const dx=x-cx;
+const dy=y-cy;
+
+return{
+
+x:
+cx +
+(dx*Math.cos(radians))
+-
+(dy*Math.sin(radians)),
+
+y:
+cy +
+(dx*Math.sin(radians))
++
+(dy*Math.cos(radians))
+
+};
+
+}
+
   
 
   ngOnInit(){
@@ -208,6 +356,17 @@ this.debugAccuracy=accuracy;
 
 const svg =
 this.gpsToSvg(lat,lng);
+
+
+const rotated =
+this.rotatePoint(
+svg.x,
+svg.y,
+-5
+);
+
+this.userX=rotated.x;
+this.userY=rotated.y;
 
 this.userX=svg.x;
 this.userY=svg.y;
