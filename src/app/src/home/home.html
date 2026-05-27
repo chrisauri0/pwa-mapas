@@ -1,0 +1,145 @@
+
+<section class="hero">
+  <div class="overlay"></div>
+
+  <nav class="navbar">
+    <div class="logo">
+      <span class="dot"></span>
+      CampusMap
+    </div>
+
+    <div class="nav-links">
+      <a href="#features">Características</a>
+      <a routerLink="/map">Mapa</a>
+      <a href="#contact">Contacto</a>
+    </div>
+  </nav>
+
+  <div class="hero-content">
+    <div class="badge">
+      Plataforma interactiva universitaria
+    </div>
+
+    <h1>
+      Explora tu universidad
+      <span>de forma inteligente</span>
+    </h1>
+
+    <p>
+      Navega fácilmente por el campus usando un mapa 2D interactivo.
+      Encuentra edificios, salones, laboratorios, cafeterías y rutas
+      importantes en segundos.
+    </p>
+
+    <div class="buttons">
+      <button (click)="irMapa()">
+  Abrir mapa
+</button>
+
+      <button class="secondary-btn">
+        Ver demo
+      </button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <h3>100%</h3>
+        <span>Interactivo</span>
+      </div>
+
+      <div class="stat-card">
+        <h3>2D</h3>
+        <span>Mapa dinámico</span>
+      </div>
+
+      <div class="stat-card">
+        <h3>24/7</h3>
+        <span>Disponible</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-preview">
+    <div class="map-window">
+      <div class="window-top">
+        <div class="circles">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+
+      <div class="map-content">
+        <div class="building building-a"></div>
+        <div class="building building-b"></div>
+        <div class="building building-c"></div>
+
+        <div class="path horizontal"></div>
+        <div class="path vertical"></div>
+
+        <div class="pin pin-1"></div>
+        <div class="pin pin-2"></div>
+        <div class="pin pin-3"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="features" id="features">
+  <h2>¿Qué ofrece la plataforma?</h2>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="icon">🗺️</div>
+      <h3>Mapa Interactivo</h3>
+      <p>
+        Visualiza el campus completo con navegación intuitiva.
+      </p>
+    </div>
+   
+
+    <div class="feature-card">
+      <div class="icon">📍</div>
+      <h3>Ubicaciones</h3>
+      <p>
+        Encuentra rápidamente edificios, aulas y áreas importantes.
+      </p>
+
+      
+    </div>
+
+    <div class="feature-card">
+      <div class="icon">⚡</div>
+      <h3>Acceso Rápido</h3>
+      <p>
+        Diseñado para estudiantes y visitantes del campus.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+
+
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-brand">
+      <div class="logo"><span class="dot"></span> CampusMap</div>
+      <p>Plataforma interactiva universitaria — navega tu campus fácilmente.</p>
+    </div>
+
+    <nav class="footer-nav" aria-label="Enlaces de pie de página">
+      <a href="#features">Características</a>
+      <a href="#about">Proyecto</a>
+      <a href="#contact">Contacto</a>
+      <a href="/privacy">Privacidad</a>
+    </nav>
+
+    <div class="footer-contact">
+      <a href="mailto:info@campusmap.example">info@campusmap.example</a>
+      <small>© 2026 CampusMap</small>
+    </div>
+  </div>
+</footer>
