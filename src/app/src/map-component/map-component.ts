@@ -1,6 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 
+import { NgZone } from '@angular/core';
+import { OnInit } from '@angular/core';
+
 @Component({
   selector: 'app-map-component',
   standalone:true,
@@ -9,7 +12,11 @@ import { Component } from '@angular/core';
   styleUrl:'./map-component.scss',
 })
 
-export class MapComponent {
+export class MapComponent implements OnInit{
+
+  constructor(
+private zone:NgZone
+){}
 
   layers=[
 
@@ -59,12 +66,49 @@ export class MapComponent {
   debugLat=0;
 debugLng=0;
 debugAccuracy=0;
+callbackCount=0;
+
+
 
 insideCampus=false;
 
   loadedLayers:string[]=[];
   failedLayers:string[]=[];
 
+testGps(){
+
+console.log('button works');
+
+navigator.geolocation.getCurrentPosition(
+
+(position)=>{
+
+alert(
+'GPS OK: ' +
+
+position.coords.latitude +
+
+' , ' +
+
+position.coords.longitude
+);
+
+},
+
+(error)=>{
+
+alert(
+'GPS ERROR: ' +
+
+JSON.stringify(error)
+);
+
+}
+
+);
+
+}
+  
   gpsToSvg(
     lat:number,
     lng:number
@@ -133,6 +177,9 @@ insideCampus=false;
 
   }
 
+
+  
+
   ngOnInit(){
     console.log(
       'MapComponent initialized'
@@ -140,8 +187,11 @@ insideCampus=false;
 
 navigator.geolocation.watchPosition(
 
-
 (position)=>{
+
+this.zone.run(()=>{
+
+this.callbackCount++;
 
 const lat =
 position.coords.latitude;
@@ -152,52 +202,35 @@ position.coords.longitude;
 const accuracy =
 position.coords.accuracy;
 
-
-console.log(
-'Position updated:',
-lat,
-lng,
-'Accuracy:',
-accuracy,
-'insideCampus:',
-this.isInsideCampus(lat,lng)
-);
-
-this.debugLat = lat;
-this.debugLng = lng;
-this.debugAccuracy = accuracy;
-
-this.insideCampus =
-this.isInsideCampus(
-lat,
-lng
-);
+this.debugLat=lat;
+this.debugLng=lng;
+this.debugAccuracy=accuracy;
 
 const svg =
-this.gpsToSvg(
-lat,
-lng
-);
+this.gpsToSvg(lat,lng);
 
-this.userX = svg.x;
-this.userY = svg.y;
+this.userX=svg.x;
+this.userY=svg.y;
+setInterval(()=>{
+
+this.userX+=20;
+this.userY+=20;
+
+},1000);
+
+
+
+});
 
 },
 
-(consoleError)=>{
+(error)=>{
 
-console.error(consoleError);
+console.error(error);
 
-},
-
-{
-enableHighAccuracy:true,
-timeout:10000,
-maximumAge:0
 }
 
 );
-
   }
 
 }
