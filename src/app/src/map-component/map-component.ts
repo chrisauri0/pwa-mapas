@@ -97,9 +97,11 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    this.map = L.map('campus-map').setView([20.656, -100.405], 18);
+   this.map = L.map('campus-map', {bounceAtZoomLimits: false,
+      }).setView([20.656, -100.405], 18);
 
     this.map.createPane('routePane').style.zIndex = '650';
+    
 
     // this.nodeLayer = L.layerGroup(); // sin .addTo — se muestra solo cuando hay búsqueda
         this.nodeLayer = L.layerGroup().addTo(this.map); // ← agregar al mapa desde el inicio
@@ -108,6 +110,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.loadCampusLayers();
     this.loadNodes(); // carga markers en nodeLayer pero no los muestra aún
+    // this.loadEdges(); // carga líneas en edgeLayer y las muestra desde el inicio
     
 
     // estos dos al final para quedar encima de todo
@@ -188,6 +191,9 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectionLayer?.clearLayers();
   }
 
+
+  
+
   // ── GPS ───────────────────────────────────────────────────
 private updateNearestNode(lat: number, lng: number): void {
   let minDist = Infinity;
@@ -233,6 +239,30 @@ private updateNearestNode(lat: number, lng: number): void {
     });
   }
 
+
+
+  private loadEdges(): void {
+    const layer = this.edgeLayer ?? this.map;
+
+    if (!layer) {
+      return;
+    }
+
+    this.edges.forEach((edge) => {
+      const fromNode = this.findNodeById(edge.from);
+      const toNode = this.findNodeById(edge.to);
+
+      if (!fromNode || !toNode) {
+        return;
+      }
+
+      L.polyline([fromNode.coords, toNode.coords], {
+        color: '#2563eb',
+        weight: 4,
+        opacity: 0.65,
+      }).addTo(layer);
+    });
+  }
   // ── Helpers ───────────────────────────────────────────────
 
   private filterNodes(query: string): CampusNode[] {

@@ -10,10 +10,11 @@
   flex: 1;
   position: relative;
 
-  #campus-map {
-    height: 100%;
-    width: 100%;
-  }
+ #campus-map {
+  height: 100%;
+  width: 100%;
+  touch-action: none; // ← esto es lo más importante
+}
 }
 
 .bottom-panel {
@@ -141,3 +142,4 @@
 
   &:hover { background: #f3f4f6; }
 }
+

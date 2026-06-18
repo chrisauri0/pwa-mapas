@@ -319,7 +319,7 @@ id
 "camino-laboratorio-industrial",
 name
 : 
-"Camino Laboratorio Industrial",
+"Camino Laboratorio Industrial ",
 type
 : 
 "path"
@@ -398,10 +398,10 @@ type
 [20.6537852153059, -100.40421508136207],
 id
 : 
-"camino-laboratorio-industrial",
+"camino-laboratorio-industrial-1",
 name
 : 
-"Camino Laboratorio Industrial",
+"Camino Laboratorio Industrial 1",
 type
 : 
 "path"
@@ -1725,16 +1725,16 @@ distance:5
 {
 from:'interseccion-biblioteca',
 
-to:'salida-industrial-1',
+to:'entrada-industrial',
 
-distance:5
+distance:2
 },
 {
     from:'interseccion-biblioteca',
 
     to:'salida-industrial-2',
 
-    distance:10
+    distance:5
 },
 {
 from:'salida-industrial-2',
@@ -1767,9 +1767,9 @@ distance:5
 {
 from:'interseccion-tecnologias-1',
 
-to:'salida-tecnologias-e',
+to:'entrada-edificio-k',
 
-distance:5
+distance:2
 },
 {
 from:'interseccion-tecnologias-1',
@@ -1845,17 +1845,48 @@ distance:5
 {
 from:'interseccion-industrial-estatua',
 
+to:'camino-mantenimiento-estatua-3',
+
+distance:2
+},
+{
+from:'camino-mantenimiento-estatua-3',
+
+to:'camino-mantenimiento-estatua-2',
+
+distance:2
+},
+{
+from:'camino-mantenimiento-estatua',
+
+to:'camino-mantenimiento-estatua-2',
+
+distance:2
+},
+
+{
+from:'camino-mantenimiento-estatua',
+
+to:'interseccion-mantenimiento',
+
+distance:2
+},
+
+{
+from:'camino-hacia-industrial',
+
 to:'camino-industrial-estatua-3',
 
-distance:5
+distance:2
 },
 {
 from:'camino-industrial-estatua-3',
 
-to:'camino-hacia-industrial',
+to:'interseccion-industrial-estatua',
 
-distance:5
+distance:3
 },
+
 {
 from:'camino-hacia-industrial',
 
@@ -1926,32 +1957,47 @@ distance:3
     distance:2
 },
 {
-from:'camino-entrada-laboratorio-industrial',
-to:'camino-entrada-mantenimiento',
-
-distance:5
-},
-{
-from:'camino-entrada-mantenimiento',
-to:'interseccion-entrada-mantenimiento',
+from:'interseccion-mantenimiento',
+to:'camino-mantenimiento',
 
 distance:2
 },
 {
-from:'interseccion-entrada-mantenimiento',
-to:'camino-entrada-mantenimiento-2',
+from:'camino-mantenimiento',
+to:'camino-laboratorio-industrial-1',
+
+distance:2
+},
+
+{
+from:'interseccion-laboratorio-industrial',
+to:'camino-laboratorio-industrial-1',
+
+distance:2
+},
+
+{
+from:'entrada-mantenimiento',
+to:'interseccion-mantenimiento-2',
+
+distance:2
+},
+
+{
+from:'interseccion-mantenimiento',
+to:'camino-mantenimiento-2',
 
 distance:2
 
 },
 {
-from:'camino-entrada-mantenimiento-2',
-to:'interseccion-entrada-mantenimiento-2',
+from:'camino-mantenimiento-2',
+to:'interseccion-mantenimiento-2',
 
 distance:2
 },
 {
-from:'interseccion-entrada-mantenimiento-2',
+from:'interseccion-mantenimiento-2',
 to:'camino-mantenimiento-dea',
 
 distance:2
@@ -1964,7 +2010,7 @@ distance:5
 {
     from:'interseccion-biblioteca',
     to:'camino-industrial-laboratorios-informatica',
-    distance:6
+    distance:5
 },
 {
 from:'camino-industrial-laboratorios-informatica',
