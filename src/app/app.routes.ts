@@ -7,7 +7,8 @@ import { Home } from './src/home/home';
 
 
 export const routes: Routes = [
+  { path: '', pathMatch: 'full', redirectTo: 'map' },
   { path: 'map', component: MapComponent },
-  { path: '', component: Home },
+  { path: 'home', component: Home },
 
 ];

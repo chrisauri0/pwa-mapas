@@ -1,395 +1,383 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  NgZone,
+  OnDestroy,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+
 import * as L from 'leaflet';
-import { NgZone } from '@angular/core';
-import { OnInit } from '@angular/core';
+
+import { CAMPUS_EDGES, CAMPUS_NODES } from '../hooks/graphs/graph-campus';
+import { CampusNode } from '../hooks/models/models-graph';
+import { CAMPUS_LAYERS } from '../hooks/models/models-map';
 
 @Component({
   selector: 'app-map-component',
-  standalone:true,
-  imports:[CommonModule],
-  templateUrl:'./map-component.html',
-  styleUrl:'./map-component.scss',
+  imports: [CommonModule],
+  templateUrl: './map-component.html',
+  styleUrl: './map-component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-
-export class MapComponent implements OnInit{
-
-  constructor(
-private zone:NgZone
-){}
-
-  layers=[
-
-    'almacen-industrial',
-    'auditorio',
-    'biblioteca',
-    'cafeteria',
-    'camino-grande',
-    'cancha-atletismo',
-    'cancha-basquetbol',
-    'cancha-fut7',
-    'cancha-futbol',
-    'CIC4.0',
-    'edificio-dea',
-    'edificio-h',
-    'edificio-i',
-    'edificio-idiomas',
-    'edificio-industrial',
-    'edificio-j',
-    'edificio-k',
-    'edificio-marketing',
-    'edificio-nano',
-    'enfermeria',
-    'frame-campus',
-    'graphlogico',
-    'laboratorio-industrial',
-    'laboratorio-mantenimineto',
-    'PIDET',
-    'rectoria',
-    'sala-de-tv',
-    'stellantis',
-    'talent-hub-servicios-escolares'
-
-  ];
-
-  readonly MAP_WIDTH = 860;
-  readonly MAP_HEIGHT = 1016;
-
-  readonly MIN_LAT = 20.653162;
-  readonly MAX_LAT = 20.658593;
-
-  readonly MIN_LNG = -100.407434;
-  readonly MAX_LNG = -100.402883;
-
-  userX=0;
-  userY=0;
-  debugLat=0;
-debugLng=0;
-debugAccuracy=0;
-callbackCount=0;
-
-
-
-insideCampus=false;
-
-  loadedLayers:string[]=[];
-  failedLayers:string[]=[];
-
-
-
-
-
-map!:L.Map;
-
-ngAfterViewInit(){
-
-this.map = L.map(
-'campus-map'
-).setView(
-[20.656,-100.405],
-18
-);
-
-L.tileLayer(
-
-'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-
-{
-
-attribution:'OpenStreetMap'
-
-}
-
-).addTo(this.map);
-
-
-const bounds:L.LatLngBoundsExpression=[
-
-[20.658593,-100.406429],
-
-[20.653162,-100.402883]
-
-];
-
-L.imageOverlay(
-
-'assets/maps/frame-campus.svg',
-
-bounds,
-
-{
-
-opacity:0.8
-
-}
-
-).addTo(this.map);
-
-
-navigator.geolocation.watchPosition(
-
-(position)=>{
-
-const lat=
-position.coords.latitude;
-
-const lng=
-position.coords.longitude;
-
-L.circleMarker(
-
-[lat,lng],
-
-{
-
-radius:8,
-
-color:'red'
-
-}
-
-).addTo(this.map);
-
-}
-
-);
-}
-
-
-
-
-
-testGps(){
-
-console.log('button works');
-
-navigator.geolocation.getCurrentPosition(
-
-(position)=>{
-
-alert(
-'GPS OK: ' +
-
-position.coords.latitude +
-
-' , ' +
-
-position.coords.longitude
-);
-
-},
-
-(error)=>{
-
-alert(
-'GPS ERROR: ' +
-
-JSON.stringify(error)
-);
-
-}
-
-);
-
-}
-  
-  gpsToSvg(
-lat:number,
-lng:number
-){
-
-const westTop = -100.406429;
-const eastTop = -100.402883;
-
-const westBottom = -100.407434;
-const eastBottom = -100.403767;
-
-const topLat = 20.658593;
-const bottomLat = 20.653162;
-
-const verticalFactor =
-
-(topLat-lat) /
-
-(topLat-bottomLat);
-
-const leftLng =
-
-westTop +
-
-(verticalFactor *
-
-(westBottom-westTop));
-
-const rightLng =
-
-eastTop +
-
-(verticalFactor *
-
-(eastBottom-eastTop));
-
-const horizontalFactor =
-
-(lng-leftLng) /
-
-(rightLng-leftLng);
-
-return{
-
-x:
-horizontalFactor
-*
-this.MAP_WIDTH,
-
-y:
-verticalFactor
-*
-this.MAP_HEIGHT
-
-};
-
-}
-  isInsideCampus(
-    lat:number,
-    lng:number
-  ){
-
-    return(
-
-      lat >= this.MIN_LAT &&
-      lat <= this.MAX_LAT &&
-
-      lng >= this.MIN_LNG &&
-      lng <= this.MAX_LNG
-
+export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
+  private readonly zone = inject(NgZone);
+
+  map?: L.Map;
+  gpsMarker?: L.CircleMarker;
+  private gpsWatchId?: number;
+  private nodeLayer?: L.LayerGroup;
+  private edgeLayer?: L.LayerGroup;
+  private routeLayer?: L.LayerGroup;
+  private selectionLayer?: L.LayerGroup;
+
+  readonly debugLat = signal(0);
+  readonly debugLng = signal(0);
+  readonly debugAccuracy = signal(0);
+  readonly callbackCount = signal(0);
+
+  readonly nodes = signal<CampusNode[]>([...CAMPUS_NODES]);
+  readonly edges = CAMPUS_EDGES;
+  readonly campusLayers = [...CAMPUS_LAYERS];
+
+  readonly searchActive = signal(false);
+  readonly endQuery = signal('');
+  readonly selectedEndId = signal('');
+  readonly nearestNodeId = signal('');
+
+  readonly routeMessage = signal('Activa el GPS y busca tu destino.');
+  readonly routeDistance = signal<number | null>(null);
+  readonly activeRoute = signal<CampusNode[]>([]);
+
+  readonly selectedStartNode = computed(() => this.findNodeById(this.nearestNodeId()));
+  readonly selectedEndNode = computed(() => this.findNodeById(this.selectedEndId()));
+  readonly filteredEndNodes = computed(() => this.filterNodes(this.endQuery()));
+
+  ngOnInit(): void {
+    if (!navigator.geolocation) {
+      this.routeMessage.set('La geolocalización no está disponible en este navegador.');
+      return;
+    }
+
+    this.gpsWatchId = navigator.geolocation.watchPosition(
+      (position) => {
+        this.zone.run(() => {
+          this.callbackCount.update((v) => v + 1);
+
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+
+          this.debugLat.set(lat);
+          this.debugLng.set(lng);
+          this.debugAccuracy.set(position.coords.accuracy);
+          this.updateNearestNode(lat, lng);
+
+          if (this.gpsMarker) {
+            this.gpsMarker.setLatLng([lat, lng]);
+            return;
+          }
+
+          if (!this.map) return;
+
+          this.gpsMarker = L.circleMarker([lat, lng], {
+            radius: 8,
+            color: '#2563eb',
+            fillColor: '#2563eb',
+            fillOpacity: 1,
+          }).addTo(this.map);
+        });
+      },
+      (error) => console.error('GPS ERROR:', error),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
-
   }
 
-  loaded(layer:string){
+  ngAfterViewInit(): void {
+    this.map = L.map('campus-map').setView([20.656, -100.405], 18);
 
-    console.log(
-      'loaded:',
-      layer
-    );
+    this.map.createPane('routePane').style.zIndex = '650';
 
-    this.loadedLayers.push(layer);
+    // this.nodeLayer = L.layerGroup(); // sin .addTo — se muestra solo cuando hay búsqueda
+        this.nodeLayer = L.layerGroup().addTo(this.map); // ← agregar al mapa desde el inicio
 
+    this.edgeLayer = L.layerGroup().addTo(this.map);
+
+    this.loadCampusLayers();
+    this.loadNodes(); // carga markers en nodeLayer pero no los muestra aún
+    
+
+    // estos dos al final para quedar encima de todo
+    this.selectionLayer = L.layerGroup().addTo(this.map);
+    this.routeLayer = L.layerGroup().addTo(this.map);
   }
 
-  error(layer:string){
-
-    console.log(
-      'ERROR:',
-      layer
-    );
-
-    this.failedLayers.push(layer);
-
+  ngOnDestroy(): void {
+    if (this.gpsWatchId !== undefined) {
+      navigator.geolocation.clearWatch(this.gpsWatchId);
+    }
+    this.map?.remove();
   }
 
+  // ── Búsqueda ──────────────────────────────────────────────
 
-  rotatePoint(
-x:number,
-y:number,
-angle:number
-){
+  updateEndQuery(event: Event): void {
+    const value = (event.target as HTMLInputElement | null)?.value ?? '';
+    this.endQuery.set(value);
+    this.searchActive.set(value.length > 0);
 
-const cx =
-this.MAP_WIDTH/2;
+    // mostrar u ocultar markers de entradas según si hay búsqueda activa
+    // if (value.length > 0) {
+    //   this.nodeLayer?.addTo(this.map!);
+    // } else {
+    //   this.nodeLayer?.remove();
+    // }
+  }
 
-const cy =
-this.MAP_HEIGHT/2;
+  selectEndNode(node: CampusNode): void {
+    this.selectedEndId.set(node.id);
+    this.endQuery.set(node.name);
+    this.searchActive.set(false);
+    // this.nodeLayer?.remove(); // ocultamos markers al seleccionar
+    this.routeMessage.set('');
+    this.routeDistance.set(null);
+    this.activeRoute.set([]);
+  }
 
-const radians =
-angle*Math.PI/180;
+  // ── Ruta ──────────────────────────────────────────────────
 
-const dx=x-cx;
-const dy=y-cy;
+  traceRoute(): void {
+    const startNode = this.selectedStartNode();
+    const endNode = this.selectedEndNode();
 
-return{
+    if (!startNode || !endNode) {
+      this.routeMessage.set('Espera la señal GPS o selecciona un destino.');
+      this.routeDistance.set(null);
+      this.activeRoute.set([]);
+      return;
+    }
 
-x:
-cx +
-(dx*Math.cos(radians))
--
-(dy*Math.sin(radians)),
+    const route = this.findShortestRoute(startNode.id, endNode.id);
 
-y:
-cy +
-(dx*Math.sin(radians))
-+
-(dy*Math.cos(radians))
+    if (!route) {
+      this.routeMessage.set('No hay un trazado disponible entre esos nodos.');
+      this.routeDistance.set(null);
+      this.activeRoute.set([]);
+      return;
+    }
 
-};
+    this.activeRoute.set(route.nodes);
+    this.routeDistance.set(route.distance);
+    this.routeMessage.set(`Ruta encontrada con ${route.nodes.length} paradas.`);
+    this.drawRoute(route.nodes);
+  }
 
+  clearSelections(): void {
+    this.selectedEndId.set('');
+    this.endQuery.set('');
+    this.searchActive.set(false);
+    this.routeMessage.set('Activa el GPS y busca tu destino.');
+    this.routeDistance.set(null);
+    this.activeRoute.set([]);
+    // this.nodeLayer?.remove();
+
+    this.routeLayer?.clearLayers();
+    this.selectionLayer?.clearLayers();
+  }
+
+  // ── GPS ───────────────────────────────────────────────────
+private updateNearestNode(lat: number, lng: number): void {
+  let minDist = Infinity;
+  let nearestId = '';
+
+  this.nodes().forEach((node) => {
+    const coords = node.coords as [number, number];  // ← cast explícito
+    const dist = Math.sqrt(Math.pow(lat - coords[0], 2) + Math.pow(lng - coords[1], 2));
+    if (dist < minDist) {
+      minDist = dist;
+      nearestId = node.id;
+    }
+  });
+
+  this.nearestNodeId.set(nearestId);
 }
 
-  
+  // ── Carga de mapa ─────────────────────────────────────────
 
-  ngOnInit(){
-    console.log(
-      'MapComponent initialized'
-    );
+  private loadCampusLayers(): void {
+    if (!this.map) return;
 
-navigator.geolocation.watchPosition(
+    this.campusLayers.forEach((layer) => {
+      if (!layer.bounds) return;
 
-(position)=>{
-
-this.zone.run(()=>{
-
-this.callbackCount++;
-
-const lat =
-position.coords.latitude;
-
-const lng =
-position.coords.longitude;
-
-const accuracy =
-position.coords.accuracy;
-
-this.debugLat=lat;
-this.debugLng=lng;
-this.debugAccuracy=accuracy;
-
-const svg =
-this.gpsToSvg(lat,lng);
-
-
-const rotated =
-this.rotatePoint(
-svg.x,
-svg.y,
--5
-);
-
-this.userX=rotated.x;
-this.userY=rotated.y;
-
-this.userX=svg.x;
-this.userY=svg.y;
-setInterval(()=>{
-
-this.userX+=20;
-this.userY+=20;
-
-},1000);
-
-
-
-});
-
-},
-
-(error)=>{
-
-console.error(error);
-
-}
-
-);
+      L.imageOverlay(`assets/maps/${layer.name}.svg`, layer.bounds, {
+        opacity: layer.opacity ?? 1,
+      }).addTo(this.map!);
+    });
   }
 
+  private loadNodes(): void {
+    const layer = this.nodeLayer;
+    if (!layer) return;
+
+    this.nodes().forEach((node) => {
+      if (!this.normalizeText(node.name).includes('entrada')) return;
+
+      L.marker(node.coords)
+        .bindPopup(node.name)
+        .on('click', () => this.zone.run(() => this.selectEndNode(node)))
+        .addTo(layer);
+    });
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+
+  private filterNodes(query: string): CampusNode[] {
+    const normalizedQuery = this.normalizeText(query);
+
+    return this.nodes()
+      .filter((node) => {
+        if (!normalizedQuery) return true;
+        return (
+          this.normalizeText(node.name).includes(normalizedQuery) ||
+          this.normalizeText(node.id).includes(normalizedQuery) ||
+          this.normalizeText(node.type).includes(normalizedQuery)
+        );
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  }
+
+  private normalizeText(value: string): string {
+    return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private findNodeById(nodeId: string): CampusNode | undefined {
+    return this.nodes().find((node) => node.id === nodeId);
+  }
+
+  private findShortestRoute(
+    startId: string,
+    endId: string,
+  ): { nodes: CampusNode[]; distance: number } | null {
+    const adjacency = this.buildAdjacency();
+    const distances = new Map<string, number>();
+    const previous = new Map<string, string | null>();
+    const unvisited = new Set<string>();
+
+    this.nodes().forEach((node) => {
+      distances.set(node.id, Infinity);
+      previous.set(node.id, null);
+      unvisited.add(node.id);
+    });
+
+    distances.set(startId, 0);
+
+    while (unvisited.size > 0) {
+      let currentId: string | undefined;
+      let currentDistance = Infinity;
+
+      unvisited.forEach((nodeId) => {
+        const d = distances.get(nodeId) ?? Infinity;
+        if (d < currentDistance) {
+          currentDistance = d;
+          currentId = nodeId;
+        }
+      });
+
+      if (!currentId || currentDistance === Infinity) break;
+
+      const selectedId = currentId;
+      unvisited.delete(selectedId);
+      if (selectedId === endId) break;
+
+      (adjacency.get(selectedId) ?? []).forEach(({ nodeId, distance }) => {
+        if (!unvisited.has(nodeId)) return;
+        const tentative = currentDistance + distance;
+        if (tentative < (distances.get(nodeId) ?? Infinity)) {
+          distances.set(nodeId, tentative);
+          previous.set(nodeId, selectedId);
+        }
+      });
+    }
+
+    const finalDistance = distances.get(endId) ?? Infinity;
+    if (finalDistance === Infinity) return null;
+
+    const routeIds: string[] = [];
+    let cur: string | null = endId;
+    while (cur) {
+      routeIds.unshift(cur);
+      cur = previous.get(cur) ?? null;
+    }
+
+    const routeNodes = routeIds
+      .map((id) => this.findNodeById(id))
+      .filter((n): n is CampusNode => Boolean(n));
+
+    if (routeNodes.length === 0 || routeNodes[0].id !== startId) return null;
+
+    return { nodes: routeNodes, distance: finalDistance };
+  }
+
+  private buildAdjacency(): Map<string, Array<{ nodeId: string; distance: number }>> {
+    const adjacency = new Map<string, Array<{ nodeId: string; distance: number }>>();
+
+    this.edges.forEach((edge) => {
+      const from = adjacency.get(edge.from) ?? [];
+      const to = adjacency.get(edge.to) ?? [];
+      from.push({ nodeId: edge.to, distance: edge.distance });
+      to.push({ nodeId: edge.from, distance: edge.distance });
+      adjacency.set(edge.from, from);
+      adjacency.set(edge.to, to);
+    });
+
+    return adjacency;
+  }
+
+  private drawRoute(routeNodes: CampusNode[]): void {
+    if (!this.map || !this.routeLayer || !this.selectionLayer) return;
+
+    this.routeLayer.clearLayers();
+    this.selectionLayer.clearLayers();
+
+    if (routeNodes.length === 0) return;
+
+    L.polyline(routeNodes.map((n) => n.coords), {
+      color: '#ef4444',
+      weight: 8,
+      opacity: 1,
+      pane: 'routePane',
+    }).addTo(this.routeLayer);
+
+    const startNode = routeNodes[0];
+    const endNode = routeNodes[routeNodes.length - 1];
+
+    L.circleMarker(startNode.coords, {
+      radius: 10,
+      color: '#16a34a',
+      fillColor: '#16a34a',
+      fillOpacity: 1,
+      weight: 2,
+      pane: 'routePane',
+    })
+      .bindPopup(`Inicio: ${startNode.name}`)
+      .addTo(this.selectionLayer);
+
+    L.circleMarker(endNode.coords, {
+      radius: 10,
+      color: '#dc2626',
+      fillColor: '#dc2626',
+      fillOpacity: 1,
+      weight: 2,
+      pane: 'routePane',
+    })
+      .bindPopup(`Llegada: ${endNode.name}`)
+      .addTo(this.selectionLayer);
+
+    const bounds = L.latLngBounds(routeNodes.map((n) => n.coords as L.LatLngExpression));
+    this.map.fitBounds(bounds, { padding: [40, 40] });
+  }
 }

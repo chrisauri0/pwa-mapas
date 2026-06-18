@@ -1,1 +1,54 @@
-<div id="campus-map"></div>
+<section class="map-page">
+  <main class="map-stage">
+    <div id="campus-map"></div>
+  </main>
+
+  <footer class="bottom-panel">
+    <div class="panel-status" aria-live="polite">
+      <span>{{ routeMessage() }}</span>
+      @if (routeDistance() !== null) {
+        <strong>{{ routeDistance() | number:'1.0-0' }} m aprox.</strong>
+      }
+    </div>
+
+    <div class="search-row">
+      <div class="search-field-wrap">
+        <input
+          type="search"
+          placeholder="¿A dónde quieres ir?"
+          [value]="endQuery()"
+          (input)="updateEndQuery($event)"
+        />
+
+        @if (searchActive() && filteredEndNodes().length > 0) {
+          <div class="node-dropdown">
+            @for (node of filteredEndNodes(); track node.id) {
+              <button type="button" (click)="selectEndNode(node)">
+                <span>{{ node.name }}</span>
+                <small>{{ node.type }}</small>
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <button type="button" class="trace-btn" (click)="traceRoute()">
+        Ir
+      </button>
+    </div>
+
+    <div class="panel-meta">
+      <div>
+        <span>Desde</span>
+        <strong>{{ selectedStartNode()?.name || 'Calculando ubicación...' }}</strong>
+      </div>
+      <div>
+        <span>Hasta</span>
+        <strong>{{ selectedEndNode()?.name || 'Sin seleccionar' }}</strong>
+      </div>
+      @if (selectedEndNode()) {
+        <button type="button" class="clear-btn" (click)="clearSelections()">✕</button>
+      }
+    </div>
+  </footer>
+</section>

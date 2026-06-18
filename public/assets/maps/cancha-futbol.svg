@@ -1,3 +1,5 @@
-<svg width="174" height="225" viewBox="0 0 174 225" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path id="cancha futbol" d="M2 29.5661C1.5 34.3994 0.5 44.4661 0.5 46.0661L31 199.566L43.5 223.566L173.5 193.066V164.566L139.5 15.0661L130.5 0.566101L2 29.5661Z" stroke="black"/>
+<svg width="860" height="1016" viewBox="0 0 860 1016" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="frame-campus">
+<path id="cancha futbol" d="M431 106.5C430.5 111.333 429.5 121.4 429.5 123L460 276.5L472.5 300.5L602.5 270V241.5L568.5 92L559.5 77.5L431 106.5Z" stroke="black"/>
+</g>
 </svg>
