@@ -1,0 +1,105 @@
+:host {
+  --bg-1: #f4f7ff;
+  --bg-2: #eefcf7;
+  --text-main: #0f172a;
+  --text-soft: #5b6475;
+  --card-bg: rgba(255, 255, 255, 0.78);
+  --card-border: rgba(255, 255, 255, 0.9);
+  --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+
+  display: block;
+  min-height: 100vh;
+  padding: clamp(1rem, 3vw, 2.2rem);
+  background:
+    radial-gradient(1200px 450px at -10% -10%, #dbeafe 0%, transparent 60%),
+    radial-gradient(900px 420px at 120% 110%, #dcfce7 0%, transparent 55%),
+    linear-gradient(135deg, var(--bg-1), var(--bg-2));
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+}
+
+.dashboard {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.dashboard h1 {
+  margin: 0 0 1.25rem;
+  font-size: clamp(1.4rem, 2.2vw, 2.1rem);
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  color: var(--text-main);
+}
+
+.stats-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.card {
+  grid-column: span 3;
+  padding: 1.1rem 1.2rem;
+  border-radius: 18px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: auto -20% -70% -20%;
+  height: 120px;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.17), rgba(16, 185, 129, 0.14));
+  filter: blur(18px);
+  pointer-events: none;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+}
+
+.card h3 {
+  margin: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-soft);
+}
+
+.card p {
+  margin: 0.65rem 0 0;
+  font-size: clamp(1.2rem, 1.6vw, 1.8rem);
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.05;
+}
+
+/* Destacar métricas clave */
+.card:nth-child(1) p,
+.card:nth-child(3) p {
+  color: #0b3b92;
+}
+
+/* Tablet */
+@media (max-width: 980px) {
+  .card {
+    grid-column: span 6;
+  }
+}
+
+/* Mobile */
+@media (max-width: 620px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    grid-column: span 1;
+  }
+}

@@ -16,7 +16,7 @@ import * as L from 'leaflet';
 import { CAMPUS_EDGES, CAMPUS_NODES } from '../hooks/graphs/graph-campus';
 import { CampusNode } from '../hooks/models/models-graph';
 import { CAMPUS_LAYERS } from '../hooks/models/models-map';
-
+// import {dashboardComponent} from "../dashboard-component/dashboard-component";
 @Component({
   selector: 'app-map-component',
   imports: [CommonModule],
@@ -101,14 +101,18 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       }).setView([20.656, -100.405], 18);
 
     this.map.createPane('routePane').style.zIndex = '650';
-    
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 22
+  }).addTo(this.map);
+
 
     // this.nodeLayer = L.layerGroup(); // sin .addTo — se muestra solo cuando hay búsqueda
         this.nodeLayer = L.layerGroup().addTo(this.map); // ← agregar al mapa desde el inicio
 
     this.edgeLayer = L.layerGroup().addTo(this.map);
 
-    this.loadCampusLayers();
+    // this.loadCampusLayers();
     this.loadNodes(); // carga markers en nodeLayer pero no los muestra aún
     // this.loadEdges(); // carga líneas en edgeLayer y las muestra desde el inicio
     
