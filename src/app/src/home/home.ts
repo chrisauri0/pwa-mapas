@@ -11,8 +11,13 @@ import { Router } from '@angular/router';
 })
 export class Home {
 
+  public menuOpen = false;
+
 
   constructor(private router: Router) {}
+
+
+
 
 
 

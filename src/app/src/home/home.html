@@ -3,17 +3,26 @@
   <div class="overlay"></div>
 
   <nav class="navbar">
-    <div class="logo">
-      <span class="dot"></span>
-      CampusMap
-    </div>
+  <div class="logo">
+    <span>
+      <img src="assets/logo.webp" alt="CampusMap Logo" class="logo-image"  />
+    </span>
+    <span class="dot"></span>
+    CampusMap
+  </div>
 
-    <div class="nav-links">
-      <a href="#features">Características</a>
-      <a routerLink="/map">Mapa</a>
-      <a href="#contact">Contacto</a>
-    </div>
-  </nav>
+  <button class="hamburger" (click)="menuOpen = !menuOpen" [class.active]="menuOpen" aria-label="Abrir menú">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+
+  <div class="nav-links" [class.open]="menuOpen">
+    <a href="#features" (click)="menuOpen = false">Características</a>
+    <a routerLink="/map" (click)="menuOpen = false">Mapa</a>
+    <a href="#contact" (click)="menuOpen = false">Contacto</a>
+  </div>
+</nav>
 
   <div class="hero-content">
     <div class="badge">

@@ -416,3 +416,79 @@ button {
   .site-footer .container { flex-direction: column; align-items: flex-start; }
   .site-footer .footer-contact { text-align: left; width: 100%; margin-top: 1rem; }
 }
+/* Hamburguesa: oculta en escritorio */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 3;
+}
+
+.hamburger span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: white;
+  border-radius: 2px;
+  transition: 0.3s;
+}
+
+.hamburger.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.active span:nth-child(2) { opacity: 0; }
+.hamburger.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* Solo en móvil cambia el comportamiento */
+@media (max-width: 768px) {
+  .hamburger {
+    display: flex;
+  }
+
+  .nav-links {
+    position: absolute;
+    top: 60px;
+    right: 0;
+    left: 0;
+    flex-direction: column;
+    gap: 0;
+    background: rgba(10, 14, 30, 0.97);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    padding: 0 1rem;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+    z-index: 5;
+  }
+
+  .nav-links.open {
+    max-height: 300px;
+    opacity: 1;
+    padding: 1rem;
+  }
+
+  .nav-links a {
+    width: 100%;
+    padding: 0.8rem 0.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .nav-links a:last-child {
+    border-bottom: none;
+  }
+}
+
+.logo-image {
+  width: 102px;
+  height: 102px;
+  object-fit: contain;
+  border-radius: 6px;
+}
