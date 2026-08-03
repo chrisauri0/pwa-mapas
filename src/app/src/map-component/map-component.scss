@@ -10,11 +10,11 @@
   flex: 1;
   position: relative;
 
- #campus-map {
-  height: 100%;
-  width: 100%;
-  touch-action: none; // ← esto es lo más importante
-}
+  #campus-map {
+    height: 100%;
+    width: 100%;
+    touch-action: none;
+  }
 }
 
 .campus-layer-label {
@@ -22,7 +22,7 @@
   border: none;
   box-shadow: none;
   font-weight: bold;
-  font-size: 14px;
+  font-size: clamp(12px, 3vw, 14px);
   color: #fff;
   text-shadow: 1px 1px 2px black;
 }
@@ -32,11 +32,11 @@
   z-index: 1000;
   background: #fff;
   border-top: 1px solid #e5e7eb;
-  padding: 12px 16px 20px;
+  padding: 12px 16px calc(20px + env(safe-area-inset-bottom)); // ← safe area iPhone
   display: flex;
   flex-direction: column;
   gap: 10px;
-  box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .panel-status {
@@ -61,13 +61,14 @@
 .search-field-wrap {
   position: relative;
   flex: 1;
+  min-width: 0; // ← evita que el input empuje el layout en pantallas muy angostas
 
   input {
     width: 100%;
     padding: 10px 14px;
     border: 1.5px solid #d1d5db;
     border-radius: 10px;
-    font-size: 15px;
+    font-size: 15px; // 15px+ evita el zoom automático de iOS al enfocar el input
     outline: none;
     box-sizing: border-box;
 
@@ -85,7 +86,7 @@
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
   max-height: 220px;
   overflow-y: auto;
   z-index: 1001;
@@ -102,11 +103,20 @@
     flex-direction: column;
     gap: 2px;
 
-    &:last-child { border-bottom: none; }
-    &:hover { background: #f9fafb; }
-
-    span { font-size: 14px; color: #111827; }
-    small { font-size: 12px; color: #9ca3af; }
+    &:last-child {
+      border-bottom: none;
+    }
+    &:hover {
+      background: #f9fafb;
+    }
+    span {
+      font-size: 14px;
+      color: #111827;
+    }
+    small {
+      font-size: 12px;
+      color: #9ca3af;
+    }
   }
 }
 
@@ -120,8 +130,11 @@
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  flex-shrink: 0; // ← evita que se comprima el botón en pantallas angostas
 
-  &:hover { background: #1d4ed8; }
+  &:hover {
+    background: #1d4ed8;
+  }
 }
 
 .panel-meta {
@@ -135,9 +148,21 @@
     flex-direction: column;
     gap: 1px;
     flex: 1;
+    min-width: 0; // ← necesario para que el ellipsis funcione dentro de flex
 
-    span { font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
-    strong { font-size: 13px; color: #374151; }
+    span {
+      font-size: 11px;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    strong {
+      font-size: 13px;
+      color: #374151;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis; // ← trunca nombres largos con "..."
+    }
   }
 }
 
@@ -149,7 +174,25 @@
   cursor: pointer;
   color: #6b7280;
   font-size: 13px;
+  flex-shrink: 0;
 
-  &:hover { background: #f3f4f6; }
+  &:hover {
+    background: #f3f4f6;
+  }
 }
 
+// Ajuste fino para pantallas muy angostas (iPhone SE, 375px o menos)
+@media (max-width: 375px) {
+  .bottom-panel {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .search-row {
+    gap: 6px;
+  }
+
+  .trace-btn {
+    padding: 10px 14px;
+  }
+}

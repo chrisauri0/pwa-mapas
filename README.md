@@ -1,59 +1,71 @@
-# AngularPwa
+# Campus Dashboard — Ecosistema Multi-dispositivo
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.10.
+Sistema de mapeo y estadísticas del campus, compuesto por 3 aplicaciones sincronizadas:
 
-## Development server
+- **PWA Móvil/TV (Angular)**: mapa interactivo con ruta óptima + dashboard tipo Smart TV
+- **Wearable (Flutter)**: monitor de actividad (pasos + notificación de llegada)
+- **Backend (NestJS)**: API REST + WebSocket Gateway
 
-To start a local development server, run:
+## Arquitectura
+
+
+
+## Requisitos previos
+
+- Node.js 20+
+- pnpm
+- Flutter SDK 3.44+
+- Android Studio (con emulador Wear OS configurado)
+
+## 1. Backend (NestJS)
 
 ```bash
+cd horarios-tv-backend
+pnpm install
+pnpm run start:dev
+```
+
+Corre en `http://localhost:3000`
+
+## 2. Frontend Angular (PWA)
+
+```bash
+cd angular-pwa
+pnpm install
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Corre en `http://localhost:4200`
 
-## Code scaffolding
+- Ruta `/map` → vista móvil con GPS y trazado de ruta óptima
+- Ruta `/dashboard` → vista Smart TV con estadísticas en vivo
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## 3. Wearable (Flutter)
 
 ```bash
-ng generate --help
+cd campus_wearable
+flutter pub get
+flutter run -d emulator-5554
 ```
 
-## Building
+> Antes de correr, actualiza la IP en `lib/main.dart` (variable `apiUrl`) con la IP local de la máquina que corre el backend:
+> ```bash
+> hostname -I
+> ```
 
-To build the project run:
+## Flujo de sincronización
 
-```bash
-ng build
-```
+1. El usuario traza una ruta en `/map` (Angular)
+2. El evento se emite vía WebSocket al backend NestJS
+3. El backend actualiza estadísticas en tiempo real (usuarios activos, destino más buscado, ruta en vivo, distancia recorrida)
+4. El dashboard `/dashboard` (Smart TV) y el wearable (Flutter, vía polling HTTP) reflejan los cambios en <2 segundos
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Variables de entorno
 
-## Running unit tests
+Cada proyecto (`angular-pwa`, `horarios-tv-backend`) requiere un archivo `.env` local (no incluido en el repo por seguridad). Ver `.env.example` en cada carpeta para las variables necesarias.
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Seguridad
 
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- CSP configurada restringiendo `img-src`, `script-src`, `connect-src` a orígenes conocidos
+- `.env` y credenciales excluidos del control de versiones
+- Ver `SECURITY.md` para el detalle de OWASP Mobile Top 10 aplicado y aviso de privacidad (LFPDPPP)
