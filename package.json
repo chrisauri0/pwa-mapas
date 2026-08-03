@@ -24,6 +24,7 @@
     "leaflet-distortableimage": "^0.21.9",
     "leaflet-imageoverlay-rotated": "^0.2.1",
     "rxjs": "~7.8.0",
+    "socket.io-client": "^4.8.3",
     "tslib": "^2.3.0"
   },
   "devDependencies": {

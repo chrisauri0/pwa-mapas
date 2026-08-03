@@ -1,30 +1,112 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { EdificiosService } from '../services/edificios.services';
+import { Edificio } from '../hooks/models/models-dashboard';
+import { CampusSocketService } from '../services/campus-socket.service';
 
 @Component({
-  selector: 'app-dashboard',
+  selector: 'app-dashboard-component',
   standalone: true,
   imports: [CommonModule],
   templateUrl: './dashboard-component.html',
-  styleUrls: ['./dashboard-component.scss'],
+  styleUrl: './dashboard-component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DashboardComponent {
 
-  readonly gpsStatus = signal('Activo');
 
-  readonly wearablesConnected = signal(12);
 
-  readonly totalRoutes = signal(87);
+export class DashboardComponent implements OnInit, OnDestroy {
+  private readonly edificiosService = inject(EdificiosService);
+  private readonly campusSocket = inject(CampusSocketService);
+  readonly liveStats = this.campusSocket.stats;
+  readonly edificios = signal<Edificio[]>([]);
+  readonly focusedIndex = signal(0);
+  readonly currentTime = signal(this.formatTime(new Date()));
+  readonly mediaError = signal(false);
 
-  readonly destination = signal('Biblioteca');
+  readonly selectedEdificio = computed(() => this.edificios()[this.focusedIndex()] ?? null);
 
-  readonly distance = signal(245);
 
-  readonly routeNodes = signal(8);
 
-  readonly lastInstruction = signal(
-    'Avanza recto 50 metros y gira a la derecha'
-  );
 
+  readonly mediaForFocused = computed(() => {
+  const images: Record<number, string> = {
+    0: '/assets/media/usuarios-activos.jpg',
+    1: '/assets/media/mas-buscado.jpg',
+    2: '/assets/media/ruta-en-vivo.jpg',
+    3: '/assets/media/recorrido-total.jpg',
+  };
+  return images[this.focusedIndex()] ?? '/assets/media/poster-default.jpg';
+});
+
+  private clockInterval?: ReturnType<typeof setInterval>;
+
+  ngOnInit(): void {
+ 
+  }
+
+  ngOnDestroy(): void {
+    if (this.clockInterval) clearInterval(this.clockInterval);
+  }
+
+  // ── Navegación D-pad ──────────────────────────────────────
+  @HostListener('window:keydown', ['$event'])
+  handleKeydown(event: KeyboardEvent): void {
+    const total = 4;
+    const cols = 2;
+    const current = this.focusedIndex();
+    let next = current;
+
+    switch (event.key) {
+      case 'ArrowRight':
+        next = current % cols === cols - 1 ? current : current + 1;
+        break;
+      case 'ArrowLeft':
+        next = current % cols === 0 ? current : current - 1;
+        break;
+      case 'ArrowDown':
+        next = current + cols < total ? current + cols : current;
+        break;
+      case 'ArrowUp':
+        next = current - cols >= 0 ? current - cols : current;
+        break;
+      case 'Enter':
+        this.selectCurrent();
+        return;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    if (next !== current) {
+      this.focusedIndex.set(next);
+      this.mediaError.set(false);
+    }
+  }
+
+  selectCurrent(): void {
+    // El "seleccionar" ya actualiza el video de fondo vía selectedEdificio (computed)
+    this.mediaError.set(false);
+  }
+
+  onMediaError(): void {
+    this.mediaError.set(true);
+  }
+
+  private formatTime(date: Date): string {
+    return date.toLocaleTimeString('es-MX', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  }
 }

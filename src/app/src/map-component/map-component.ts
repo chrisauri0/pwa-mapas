@@ -16,6 +16,7 @@ import * as L from 'leaflet';
 import { CAMPUS_EDGES, CAMPUS_NODES } from '../hooks/graphs/graph-campus';
 import { CampusNode } from '../hooks/models/models-graph';
 import { CAMPUS_LAYERS } from '../hooks/models/models-map';
+import { CampusSocketService } from '../services/campus-socket.service';
 // import {dashboardComponent} from "../dashboard-component/dashboard-component";
 @Component({
   selector: 'app-map-component',
@@ -34,6 +35,10 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   private edgeLayer?: L.LayerGroup;
   private routeLayer?: L.LayerGroup;
   private selectionLayer?: L.LayerGroup;
+
+
+  private readonly campusSocket = inject(CampusSocketService);
+
 
   readonly debugLat = signal(0);
   readonly debugLng = signal(0);
@@ -160,6 +165,9 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     const startNode = this.selectedStartNode();
     const endNode = this.selectedEndNode();
 
+
+
+
     if (!startNode || !endNode) {
       this.routeMessage.set('Espera la señal GPS o selecciona un destino.');
       this.routeDistance.set(null);
@@ -179,6 +187,10 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.activeRoute.set(route.nodes);
     this.routeDistance.set(route.distance);
     this.routeMessage.set(`Ruta encontrada con ${route.nodes.length} paradas.`);
+
+
+
+    this.campusSocket.emitirRutaTrazada(endNode.id, endNode.name, startNode.name, route.distance);
     this.drawRoute(route.nodes);
   }
 

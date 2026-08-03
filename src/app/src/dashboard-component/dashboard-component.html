@@ -1,29 +1,53 @@
-<div class="dashboard">
+<section class="tv-stage">
 
-  <h1>Dashboard de Navegación</h1>
+  <header class="tv-header">
+    <span class="tv-header__title">Campus Dashboard</span>
+    <span class="tv-header__clock">{{ currentTime() }}</span>
+  </header>
 
-  <div class="stats-grid">
+  <div class="tv-content">
 
-    <div class="card">
-      <h3>GPS</h3>
-      <p>{{ gpsStatus() }}</p>
+    <div class="tv-grid">
+      
+        <div class="tv-card" [class.tv-card--focused]="focusedIndex() === 0">
+          <span class="tv-card__nombre">{{ liveStats().usuariosActivos }}</span>
+          <span class="tv-card__tipo">Usuarios activos ahora</span>
+          <span class="tv-card__detalle">Pico hoy: {{ liveStats().picoUsuariosHoy }}</span>
+        </div>
+
+        <div class="tv-card" [class.tv-card--focused]="focusedIndex() === 1">
+          <span class="tv-card__nombre">{{ liveStats().masBuscado?.nombre || 'Sin datos aún' }}</span>
+          <span class="tv-card__tipo">Destino más buscado</span>
+          <span class="tv-card__detalle">{{ liveStats().masBuscado?.count || 0 }} búsquedas hoy</span>
+        </div>
+
+        <div class="tv-card" [class.tv-card--focused]="focusedIndex() === 2">
+          <span class="tv-card__nombre tv-card__nombre--ruta">
+            {{ liveStats().ultimaRuta?.origenNombre || '—' }} → {{ liveStats().ultimaRuta?.destinoNombre || 'Esperando...' }}
+          </span>
+          <span class="tv-card__tipo">Ruta en vivo</span>
+        </div>
+
+        <div class="tv-card" [class.tv-card--focused]="focusedIndex() === 3">
+          <span class="tv-card__nombre">{{ liveStats().distanciaTotalHoyMetros }} m</span>
+          <span class="tv-card__tipo">Recorrido total hoy</span>
+          <span class="tv-card__detalle">{{ liveStats().totalRutasHoy }} rutas trazadas</span>
+        </div>
+
     </div>
 
-    <div class="card">
-      <h3>Destino</h3>
-      <p>{{ destination() }}</p>
-    </div>
-
-    <div class="card">
-      <h3>Distancia</h3>
-      <p>{{ distance() }} m</p>
-    </div>
-
-    <div class="card">
-      <h3>Nodos Ruta</h3>
-      <p>{{ routeNodes() }}</p>
+    <div class="tv-media">
+      @if (!mediaError()) {
+        <img
+          [src]="mediaForFocused()"
+          alt="Vista relacionada al dato seleccionado"
+          (error)="onMediaError()"
+        />
+      } @else {
+        <img src="/assets/media/poster-default.jpg" alt="Vista del campus" />
+      }
     </div>
 
   </div>
 
-</div>
+</section>
