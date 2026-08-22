@@ -40,12 +40,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   readonly mediaForFocused = computed(() => {
   const images: Record<number, string> = {
-    0: '/assets/media/usuarios-activos.jpg',
-    1: '/assets/media/mas-buscado.jpg',
-    2: '/assets/media/ruta-en-vivo.jpg',
-    3: '/assets/media/recorrido-total.jpg',
+    0: '/assets/media/usuarios-activoasdasdasds.webp',
+    1: '/assets/media/edificios.webp',
+    2: '/assets/media/ruta-actual.webp',
+    3: '/assets/media/caminata.webp',
   };
-  return images[this.focusedIndex()] ?? '/assets/media/poster-default.jpg';
+  return images[this.focusedIndex()] ?? '/assets/media/not-found.webp';
 });
 
   private clockInterval?: ReturnType<typeof setInterval>;
