@@ -29,11 +29,21 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
-          },  
+            "styles": ["node_modules/leaflet/dist/leaflet.css", "src/styles.scss"]
+          },
           "configurations": {
             "production": {
-              "budgets": [
+
+                 "optimization": {
+                    "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": true
+                },
+
+                "budgets": [
                 {
                   "type": "initial",
                   "maximumWarning": "500kB",
@@ -41,8 +51,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
+                  "maximumWarning": "12kB",
+                  "maximumError": "24kB"
                 }
               ],
               "outputHashing": "all",

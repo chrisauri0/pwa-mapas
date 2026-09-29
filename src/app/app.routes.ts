@@ -11,8 +11,19 @@ export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'home' },
   { path: 'dashboard', component: DashboardComponent },
   { path: 'map', component: MapComponent },
-    { path: 'terminos', component: Terminos },
-
+  { path: 'terminos', component: Terminos },
   { path: 'home', component: Home },
+  { path: 'prueba-ubicacion',
+  loadComponent: () =>
+    import('./pages/prueba-ubicacion/prueba-ubicacion.component')
+      .then(m => m.PruebaUbicacionComponent),
+  },
+
+  {
+  path: 'prueba-pasos',
+  loadComponent: () =>
+    import('./pages/prueba-pasos/prueba-pasos.component')
+      .then(m => m.PruebaPasosComponent),
+},
 
 ];

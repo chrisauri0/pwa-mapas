@@ -5,19 +5,20 @@ import {
   Component,
   NgZone,
   OnDestroy,
-  OnInit,
   computed,
   inject,
   signal,
 } from '@angular/core';
 
 import * as L from 'leaflet';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation, Position } from '@capacitor/geolocation';
 
 import { CAMPUS_EDGES, CAMPUS_NODES } from '../hooks/graphs/graph-campus';
 import { CampusNode } from '../hooks/models/models-graph';
 import { CAMPUS_LAYERS } from '../hooks/models/models-map';
 import { CampusSocketService } from '../services/campus-socket.service';
-// import {dashboardComponent} from "../dashboard-component/dashboard-component";
+
 @Component({
   selector: 'app-map-component',
   imports: [CommonModule],
@@ -25,20 +26,18 @@ import { CampusSocketService } from '../services/campus-socket.service';
   styleUrl: './map-component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
+export class MapComponent implements AfterViewInit, OnDestroy {
   private readonly zone = inject(NgZone);
+  private readonly campusSocket = inject(CampusSocketService);
 
   map?: L.Map;
   gpsMarker?: L.CircleMarker;
-  private gpsWatchId?: number;
+  private gpsWatchId?: string;
+  private resizeObserver?: ResizeObserver;
   private nodeLayer?: L.LayerGroup;
   private edgeLayer?: L.LayerGroup;
   private routeLayer?: L.LayerGroup;
   private selectionLayer?: L.LayerGroup;
-
-
-  private readonly campusSocket = inject(CampusSocketService);
-
 
   readonly debugLat = signal(0);
   readonly debugLng = signal(0);
@@ -62,100 +61,203 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly selectedEndNode = computed(() => this.findNodeById(this.selectedEndId()));
   readonly filteredEndNodes = computed(() => this.filterNodes(this.endQuery()));
 
-  ngOnInit(): void {
-    if (!navigator.geolocation) {
-      this.routeMessage.set('La geolocalización no está disponible en este navegador.');
-      return;
-    }
-
-    this.gpsWatchId = navigator.geolocation.watchPosition(
-      (position) => {
-        this.zone.run(() => {
-          this.callbackCount.update((v) => v + 1);
-
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-
-          this.debugLat.set(lat);
-          this.debugLng.set(lng);
-          this.debugAccuracy.set(position.coords.accuracy);
-          this.updateNearestNode(lat, lng);
-
-          if (this.gpsMarker) {
-            this.gpsMarker.setLatLng([lat, lng]);
-            return;
-          }
-
-          if (!this.map) return;
-
-          this.gpsMarker = L.circleMarker([lat, lng], {
-            radius: 8,
-            color: '#2563eb',
-            fillColor: '#2563eb',
-            fillOpacity: 1,
-          }).addTo(this.map);
-        });
-      },
-      (error) => console.error('GPS ERROR:', error),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-    );
-  }
-
   ngAfterViewInit(): void {
-
-
-
-
     this.configureLeafletIcons();
 
-   this.map = L.map('campus-map', {bounceAtZoomLimits: false,
-      }).setView([20.656, -100.405], 18);
+    this.map = L.map('campus-map', { bounceAtZoomLimits: false }).setView(
+      [20.656, -100.405],
+      18,
+    );
 
     this.map.createPane('routePane').style.zIndex = '650';
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 22
-  }).addTo(this.map);
 
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 22,
+    }).addTo(this.map);
 
-    // this.nodeLayer = L.layerGroup(); // sin .addTo — se muestra solo cuando hay búsqueda
-        this.nodeLayer = L.layerGroup().addTo(this.map); // ← agregar al mapa desde el inicio
-
+    this.nodeLayer = L.layerGroup().addTo(this.map);
     this.edgeLayer = L.layerGroup().addTo(this.map);
 
     // this.loadCampusLayers();
-    this.loadNodes(); // carga markers en nodeLayer pero no los muestra aún
-    // this.loadEdges(); // carga líneas en edgeLayer y las muestra desde el inicio
-    
+    this.loadNodes();
+    // this.loadEdges();
 
     // estos dos al final para quedar encima de todo
     this.selectionLayer = L.layerGroup().addTo(this.map);
     this.routeLayer = L.layerGroup().addTo(this.map);
+
+    // Recalcular tamaño cuando el layout del WebView se estabilice
+    setTimeout(() => this.map?.invalidateSize(), 0);
+
+    const container = document.getElementById('campus-map');
+    if (container) {
+      this.resizeObserver = new ResizeObserver(() => this.map?.invalidateSize());
+      this.resizeObserver.observe(container);
+    }
+
+    // El GPS arranca cuando el mapa ya existe
+    void this.startGps();
   }
 
   ngOnDestroy(): void {
-    if (this.gpsWatchId !== undefined) {
-      navigator.geolocation.clearWatch(this.gpsWatchId);
+    if (this.gpsWatchId) {
+      void Geolocation.clearWatch({ id: this.gpsWatchId });
     }
+    this.resizeObserver?.disconnect();
     this.map?.remove();
   }
 
+  // ── GPS ───────────────────────────────────────────────────
+  private async startGps(): Promise<void> {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        let status = await Geolocation.checkPermissions();
+        console.log('🔍 Permiso de ubicación:', status.location);
 
+        if (status.location !== 'granted') {
+          status = await Geolocation.requestPermissions({ permissions: ['location'] });
+          console.log('🙋 Resultado de la solicitud:', status.location);
+        }
 
-private configureLeafletIcons(): void {
-  const iconDefault = L.icon({
-    iconUrl: 'leaflet/marker-icon.png',
-    iconRetinaUrl: 'leaflet/marker-icon-2x.png',
-    shadowUrl: 'leaflet/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    tooltipAnchor: [16, -28],
-    shadowSize: [41, 41],
-  });
-  L.Marker.prototype.options.icon = iconDefault;
-}
+        if (status.location !== 'granted') {
+          this.zone.run(() =>
+            this.routeMessage.set(
+              'Sin permiso de ubicación. Actívalo en Ajustes → Apps → Mapa UTEQ → Permisos.',
+            ),
+          );
+          return;
+        }
+      }
 
+      // Paso 1: fix rápido de baja precisión (Wi-Fi/antenas) para pintar algo ya
+      await this.getQuickFix();
+
+      // Paso 2: seguimiento de alta precisión (GPS satelital)
+      await this.startWatch();
+    } catch (e) {
+      this.zone.run(() => this.handleGpsError(e));
+    }
+  }
+
+  private async getQuickFix(): Promise<void> {
+    try {
+      console.log('⚡ Pidiendo ubicación rápida...');
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: false,
+        timeout: 15000,
+        maximumAge: 5 * 60 * 1000, // acepta una ubicación de hasta 1 min de antigüedad
+      });
+      console.log('⚡ Ubicación rápida:', position.coords.accuracy, 'm');
+      this.zone.run(() => this.onPosition(position));
+    } catch (e) {
+      // No es grave: el watch de alta precisión lo intentará de todos modos
+      console.warn('⚡ Sin ubicación rápida, esperando GPS...', e);
+    }
+  }
+
+  private async startWatch(): Promise<void> {
+    if (this.gpsWatchId) {
+      await Geolocation.clearWatch({ id: this.gpsWatchId });
+      this.gpsWatchId = undefined;
+    }
+
+    this.gpsWatchId = await Geolocation.watchPosition(
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 },
+      (position, error) => {
+        this.zone.run(() => {
+          if (error || !position) {
+            this.handleGpsError(error);
+
+            // Si fue timeout, reintentamos en 3 s en lugar de quedarnos sin GPS
+            const msg = error instanceof Error ? error.message : String(error ?? '');
+            if (/in time|timeout/i.test(msg)) {
+              console.log('🔁 Reintentando GPS en 3 s...');
+              setTimeout(() => void this.startWatch(), 3000);
+            }
+            return;
+          }
+          this.onPosition(position);
+        });
+      },
+    );
+    console.log('📡 GPS iniciado, watch id:', this.gpsWatchId);
+  }
+
+  private onPosition(position: Position): void {
+    this.callbackCount.update((v) => v + 1);
+
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+
+    this.debugLat.set(lat);
+    this.debugLng.set(lng);
+    this.debugAccuracy.set(position.coords.accuracy);
+    this.updateNearestNode(lat, lng);
+
+    if (this.routeMessage().startsWith('Activa el GPS') || this.routeMessage().startsWith('Sin señal')) {
+      this.routeMessage.set('Busca tu destino.');
+    }
+
+    if (this.gpsMarker) {
+      this.gpsMarker.setLatLng([lat, lng]);
+      return;
+    }
+
+    if (!this.map) return;
+
+    this.gpsMarker = L.circleMarker([lat, lng], {
+      radius: 8,
+      color: '#2563eb',
+      fillColor: '#2563eb',
+      fillOpacity: 1,
+    }).addTo(this.map);
+  }
+
+  private handleGpsError(error: unknown): void {
+    const msg = error instanceof Error ? error.message : String(error ?? 'Error desconocido');
+    console.error('❌ GPS ERROR:', msg);
+
+    if (/location services are not enabled|disabled/i.test(msg)) {
+      this.routeMessage.set('El GPS del teléfono está apagado. Actívalo para ver tu ubicación.');
+    } else if (/timeout/i.test(msg)) {
+      this.routeMessage.set('Sin señal GPS todavía. Intenta cerca de una ventana o al aire libre.');
+    } else if (/denied|permission/i.test(msg)) {
+      this.routeMessage.set('Sin permiso de ubicación. Actívalo en los ajustes de la app.');
+    } else {
+      this.routeMessage.set('No se pudo obtener tu ubicación.');
+    }
+  }
+
+  private updateNearestNode(lat: number, lng: number): void {
+    let minDist = Infinity;
+    let nearestId = '';
+
+    this.nodes().forEach((node) => {
+      const coords = node.coords as [number, number];
+      const dist = Math.sqrt(Math.pow(lat - coords[0], 2) + Math.pow(lng - coords[1], 2));
+      if (dist < minDist) {
+        minDist = dist;
+        nearestId = node.id;
+      }
+    });
+
+    this.nearestNodeId.set(nearestId);
+  }
+
+  private configureLeafletIcons(): void {
+    const iconDefault = L.icon({
+      iconUrl: 'leaflet/marker-icon.png',
+      iconRetinaUrl: 'leaflet/marker-icon-2x.png',
+      shadowUrl: 'leaflet/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      tooltipAnchor: [16, -28],
+      shadowSize: [41, 41],
+    });
+    L.Marker.prototype.options.icon = iconDefault;
+  }
 
   // ── Búsqueda ──────────────────────────────────────────────
 
@@ -163,20 +265,12 @@ private configureLeafletIcons(): void {
     const value = (event.target as HTMLInputElement | null)?.value ?? '';
     this.endQuery.set(value);
     this.searchActive.set(value.length > 0);
-
-    // mostrar u ocultar markers de entradas según si hay búsqueda activa
-    // if (value.length > 0) {
-    //   this.nodeLayer?.addTo(this.map!);
-    // } else {
-    //   this.nodeLayer?.remove();
-    // }
   }
 
   selectEndNode(node: CampusNode): void {
     this.selectedEndId.set(node.id);
     this.endQuery.set(node.name);
     this.searchActive.set(false);
-    // this.nodeLayer?.remove(); // ocultamos markers al seleccionar
     this.routeMessage.set('');
     this.routeDistance.set(null);
     this.activeRoute.set([]);
@@ -187,9 +281,6 @@ private configureLeafletIcons(): void {
   traceRoute(): void {
     const startNode = this.selectedStartNode();
     const endNode = this.selectedEndNode();
-
-
-
 
     if (!startNode || !endNode) {
       this.routeMessage.set('Espera la señal GPS o selecciona un destino.');
@@ -211,8 +302,6 @@ private configureLeafletIcons(): void {
     this.routeDistance.set(route.distance);
     this.routeMessage.set(`Ruta encontrada con ${route.nodes.length} paradas.`);
 
-
-
     this.campusSocket.emitirRutaTrazada(endNode.id, endNode.name, startNode.name, route.distance);
     this.drawRoute(route.nodes);
   }
@@ -224,31 +313,10 @@ private configureLeafletIcons(): void {
     this.routeMessage.set('Activa el GPS y busca tu destino.');
     this.routeDistance.set(null);
     this.activeRoute.set([]);
-    // this.nodeLayer?.remove();
 
     this.routeLayer?.clearLayers();
     this.selectionLayer?.clearLayers();
   }
-
-
-  
-
-  // ── GPS ───────────────────────────────────────────────────
-private updateNearestNode(lat: number, lng: number): void {
-  let minDist = Infinity;
-  let nearestId = '';
-
-  this.nodes().forEach((node) => {
-    const coords = node.coords as [number, number];  // ← cast explícito
-    const dist = Math.sqrt(Math.pow(lat - coords[0], 2) + Math.pow(lng - coords[1], 2));
-    if (dist < minDist) {
-      minDist = dist;
-      nearestId = node.id;
-    }
-  });
-
-  this.nearestNodeId.set(nearestId);
-}
 
   // ── Carga de mapa ─────────────────────────────────────────
 
@@ -278,22 +346,14 @@ private updateNearestNode(lat: number, lng: number): void {
     });
   }
 
-
-
   private loadEdges(): void {
     const layer = this.edgeLayer ?? this.map;
-
-    if (!layer) {
-      return;
-    }
+    if (!layer) return;
 
     this.edges.forEach((edge) => {
       const fromNode = this.findNodeById(edge.from);
       const toNode = this.findNodeById(edge.to);
-
-      if (!fromNode || !toNode) {
-        return;
-      }
+      if (!fromNode || !toNode) return;
 
       L.polyline([fromNode.coords, toNode.coords], {
         color: '#2563eb',
@@ -302,6 +362,7 @@ private updateNearestNode(lat: number, lng: number): void {
       }).addTo(layer);
     });
   }
+
   // ── Helpers ───────────────────────────────────────────────
 
   private filterNodes(query: string): CampusNode[] {
