@@ -1,5 +1,4 @@
 <section class="map-page">
-  
   <main class="map-stage">
     <div id="campus-map"></div>
   </main>
@@ -7,10 +6,39 @@
   <footer class="bottom-panel">
     <div class="panel-status" aria-live="polite">
       <span>{{ routeMessage() }}</span>
-      @if (routeDistance() !== null) {
+      @if (routeDistance() !== null && !llegada()) {
         <strong>{{ routeDistance() | number:'1.0-0' }} m aprox.</strong>
       }
     </div>
+
+    @if (llegada(); as l) {
+      <div class="arrival-card">
+        <strong>🎉 ¡Llegaste a {{ l.destino }}!</strong>
+        <span>
+          👟 {{ l.pasos }} pasos{{ l.simulado ? ' (estimados)' : '' }}
+          · {{ l.distancia }} m · {{ formatTime(l.segundos) }}
+        </span>
+        @if (l.simulado) {
+          <small>Modo demostración</small>
+        }
+      </div>
+    }
+
+    @if (navegando()) {
+      <div class="nav-row">
+        <span class="nav-steps">👟 {{ pasosEnPantalla() }} pasos</span>
+        @if (modoDemo) {
+          <button
+            type="button"
+            class="demo-btn"
+            (click)="simulateArrival()"
+            [disabled]="simulando()"
+          >
+            {{ simulando() ? 'Simulando...' : '▶ Simular llegada' }}
+          </button>
+        }
+      </div>
+    }
 
     <div class="search-row">
       <div class="search-field-wrap">

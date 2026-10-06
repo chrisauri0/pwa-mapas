@@ -1,0 +1,116 @@
+$primario: #1b5e20;
+$error: #c62828;
+.consulta {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 24px) 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-family: system-ui, sans-serif;
+}
+.tarjeta {
+  border: 1px solid #cfd8cf;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+
+  img {
+    display: block;
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+  }
+
+  .contenido {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: $primario;
+  }
+
+  .carrera {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4a574a;
+  }
+
+  .mensaje {
+    margin: 4px 0 0;
+    line-height: 1.5;
+  }
+}
+h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  text-align: center;
+  color: $primario;
+}
+
+button {
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  background: $primario;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+
+  &:active { transform: scale(0.98); }
+  &:disabled { opacity: 0.6; cursor: default; }
+}
+
+.estado {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border-radius: 10px;
+  text-align: center;
+
+  p { margin: 0; }
+}
+
+.cargando { color: $primario; }
+
+.error {
+  background: #ffebee;
+  color: $error;
+  border: 1px solid rgba($error, 0.3);
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba($primario, 0.2);
+  border-top-color: $primario;
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar { to { transform: rotate(360deg); } }
+
+.respuesta {
+  background: #f5f5f5;
+  border-radius: 10px;
+  padding: 12px;
+  overflow-x: auto;
+
+  pre {
+    margin: 0;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}

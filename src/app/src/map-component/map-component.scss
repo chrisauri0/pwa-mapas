@@ -196,3 +196,71 @@
     padding: 10px 14px;
   }
 }
+
+
+
+.arrival-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  animation: pop-in 0.3s ease-out;
+
+  strong {
+    font-size: 15px;
+    color: #065f46;
+  }
+  span {
+    font-size: 13px;
+    color: #047857;
+  }
+  small {
+    font-size: 11px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}
+
+.nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nav-steps {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.demo-btn {
+  padding: 8px 14px;
+  border: 1.5px dashed #9333ea;
+  border-radius: 10px;
+  background: #faf5ff;
+  color: #7e22ce;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:disabled {
+    opacity: 0.6;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

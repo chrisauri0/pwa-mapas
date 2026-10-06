@@ -1,0 +1,65 @@
+<main class="usuarios">
+  <h1>Usuarios</h1>
+
+  <section class="formulario">
+    <h2>{{ editandoId() === null ? 'Registrar usuario' : 'Editar usuario' }}</h2>
+
+    <label>
+      Nombre
+      <input type="text" [(ngModel)]="form.nombre" placeholder="Ej. Ana López" />
+    </label>
+
+    <label>
+      Edad
+      <input type="number" [(ngModel)]="form.edad" min="1" max="120" placeholder="Ej. 20" />
+    </label>
+
+    <label>
+      Carrera
+      <input type="text" [(ngModel)]="form.profesion" placeholder="Ej. TI en Desarrollo de Software" />
+    </label>
+
+    <!-- 🆕 Caso 4 -->
+    <label>
+      Correo
+      <input type="email" [(ngModel)]="form.correo" placeholder="Ej. ana@uteq.edu.mx" autocomplete="email" />
+    </label>
+
+    <div class="acciones">
+      <button class="primario" (click)="guardar()">
+        {{ editandoId() === null ? 'Registrar' : 'Guardar cambios' }}
+      </button>
+      @if (editandoId() !== null) {
+        <button class="secundario" (click)="limpiar()">Cancelar</button>
+      }
+    </div>
+  </section>
+
+  @if (mensaje()) {
+    <p class="mensaje" [class.error]="esError()">{{ mensaje() }}</p>
+  }
+
+  <button class="ver" (click)="verUsuarios()">VER usuarios</button>
+
+  @if (mostrando()) {
+    <section class="lista">
+      @for (u of usuarios(); track u.id) {
+        <article class="usuario">
+          <div class="datos">
+            <strong>{{ u.nombre }}</strong>
+            <span>{{ u.edad }} años</span>
+            <span>{{ u.profesion }}</span>
+            <!-- 🆕 Caso 4: los registros viejos quedan con correo vacío -->
+            <span>{{ u.correo || 'Sin correo registrado' }}</span>
+          </div>
+          <div class="botones">
+            <button class="secundario" (click)="editar(u)">Editar</button>
+            <button class="peligro" (click)="eliminar(u)">Eliminar</button>
+          </div>
+        </article>
+      } @empty {
+        <p class="vacio">Todavía no hay usuarios. Registra el primero con el formulario.</p>
+      }
+    </section>
+  }
+</main>

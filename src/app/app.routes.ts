@@ -3,8 +3,8 @@ import { MapComponent } from './src/map-component/map-component';
 import { Home } from './src/home/home';
 import { DashboardComponent } from './src/dashboard-component/dashboard-component';
 import { Terminos } from './src/terminos/terminos';
-
-
+import { ConsultaWebComponent } from './consulta-web/consulta-web';
+import { UsuariosComponent } from './usuarios/usuarios';
 
 
 export const routes: Routes = [
@@ -13,6 +13,8 @@ export const routes: Routes = [
   { path: 'map', component: MapComponent },
   { path: 'terminos', component: Terminos },
   { path: 'home', component: Home },
+  {path:  'consulta-web', component: ConsultaWebComponent},
+  {path : 'usuarios', component: UsuariosComponent},
   { path: 'prueba-ubicacion',
   loadComponent: () =>
     import('./pages/prueba-ubicacion/prueba-ubicacion.component')

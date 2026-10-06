@@ -1,0 +1,33 @@
+<main class="consulta">
+  <h1>Consulta de información</h1>
+
+  <button (click)="consultar()" [disabled]="cargando()">CONSULTAR</button>
+
+  @if (cargando()) {
+    <div class="estado cargando">
+      <span class="spinner"></span>
+      <p>Consultando...</p>
+    </div>
+  }
+
+  @if (error()) {
+    <p class="estado error">{{ error() }}</p>
+  }
+
+  @if (datos(); as d) {
+    <article class="tarjeta">
+      @if (d.imagen && !imagenFallo) {
+        <img [src]="d.imagen" alt="Imagen de {{ d.nombre }}" (error)="imagenFallo = true" />
+      }
+      @if (imagenFallo) {
+        <p class="estado error">No fue posible cargar la imagen.</p>
+      }
+
+      <div class="contenido">
+        <h2>{{ d.nombre }}</h2>
+        <p class="carrera">Carrera: {{ d.carrera }}</p>
+        <p class="mensaje">{{ d.mensaje }}</p>
+      </div>
+    </article>
+  }
+</main>

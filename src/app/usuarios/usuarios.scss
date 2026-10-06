@@ -1,0 +1,137 @@
+$primario: #1b5e20;
+$primario-claro: #e8f5e9;
+$error: #c62828;
+$texto: #1f2a1f;
+$borde: #cfd8cf;
+
+.usuarios {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 24px) 20px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-family: system-ui, sans-serif;
+  color: $texto;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  color: $primario;
+}
+
+h2 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid $borde;
+  border-radius: 14px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  input {
+    padding: 12px;
+    border: 1px solid $borde;
+    border-radius: 8px;
+    font-size: 1rem;
+
+    &:focus {
+      outline: 2px solid $primario;
+      outline-offset: 1px;
+      border-color: transparent;
+    }
+  }
+}
+
+.acciones {
+  display: flex;
+  gap: 8px;
+
+  button { flex: 1; }
+}
+
+button {
+  padding: 12px 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:active { transform: scale(0.98); }
+  &:focus-visible { outline: 2px solid $primario; outline-offset: 2px; }
+}
+
+.primario { background: $primario; color: #fff; }
+.secundario { background: $primario-claro; color: $primario; }
+.peligro { background: #ffebee; color: $error; }
+
+.ver {
+  padding: 14px;
+  background: #fff;
+  color: $primario;
+  border: 2px solid $primario;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+.mensaje {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: $primario-claro;
+  color: $primario;
+
+  &.error { background: #ffebee; color: $error; }
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.usuario {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-left: 4px solid $primario;
+  border-radius: 8px;
+  background: #f6f8f6;
+
+  .datos {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    strong { font-size: 1.05rem; }
+    span { font-size: 0.9rem; color: #4a574a; overflow-wrap: anywhere; }
+  }
+
+  .botones {
+    display: flex;
+    gap: 8px;
+
+    button { flex: 1; padding: 8px; font-size: 0.85rem; }
+  }
+}
+
+.vacio {
+  margin: 0;
+  text-align: center;
+  color: #4a574a;
+}
