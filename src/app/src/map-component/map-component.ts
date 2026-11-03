@@ -1,5 +1,4 @@
 import { CommonModule } from '@angular/common';
-import { WidgetBridge } from '../../core/plugins/widget-bridge';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -7,10 +6,11 @@ import {
   NgZone,
   OnDestroy,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
-import { ArrivalNotificationService } from '../../core/services/arrival-notification.service';
+
 import * as L from 'leaflet';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation, Position } from '@capacitor/geolocation';
@@ -20,7 +20,13 @@ import { CAMPUS_EDGES, CAMPUS_NODES } from '../hooks/graphs/graph-campus';
 import { CampusNode } from '../hooks/models/models-graph';
 import { CAMPUS_LAYERS } from '../hooks/models/models-map';
 import { CampusSocketService } from '../services/campus-socket.service';
+import { ArrivalCardComponent, LlegadaInfo } from '../arrival-card/arrival-card';
+import { AvisosEdificioComponent } from '../avisos-edificio/avisos-edificio';
+
 import { StepCounterService } from '../../core/services/step-counter.service';
+import { ArrivalNotificationService } from '../../core/services/arrival-notification.service';
+import { AvisosService, infoTipo } from '../../core/services/avisos.service';
+import { WidgetBridge } from '../../core/plugins/widget-bridge';
 
 const RADIO_LLEGADA_M = 15;
 const METROS_POR_PASO = 0.75;
@@ -28,17 +34,9 @@ const VELOCIDAD_CAMINATA_MS = 1.3; // ~4.7 km/h
 const DURACION_DEMO_MS = 5000;
 const INTERVALO_DEMO_MS = 50;
 
-interface LlegadaInfo {
-  destino: string;
-  pasos: number;
-  distancia: number;
-  segundos: number;
-  simulado: boolean;
-}
-
 @Component({
   selector: 'app-map-component',
-  imports: [CommonModule],
+  imports: [CommonModule, ArrivalCardComponent, AvisosEdificioComponent],
   templateUrl: './map-component.html',
   styleUrl: './map-component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -46,8 +44,10 @@ interface LlegadaInfo {
 export class MapComponent implements AfterViewInit, OnDestroy {
   private readonly zone = inject(NgZone);
   private readonly campusSocket = inject(CampusSocketService);
-  readonly steps = inject(StepCounterService);
   private readonly notis = inject(ArrivalNotificationService);
+  readonly steps = inject(StepCounterService);
+  readonly avisos = inject(AvisosService);
+
   // Pon en false para la entrega final y desaparece el botón de demo
   readonly modoDemo = true;
 
@@ -57,6 +57,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   private resizeObserver?: ResizeObserver;
   private nodeLayer?: L.LayerGroup;
   private edgeLayer?: L.LayerGroup;
+  private avisoLayer?: L.LayerGroup;
   private routeLayer?: L.LayerGroup;
   private selectionLayer?: L.LayerGroup;
 
@@ -95,6 +96,12 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   readonly selectedEndNode = computed(() => this.findNodeById(this.selectedEndId()));
   readonly filteredEndNodes = computed(() => this.filterNodes(this.endQuery()));
 
+  // Cada vez que cambian los avisos (en tiempo real), se redibujan en el mapa
+  private readonly avisosEffect = effect(() => {
+    this.avisos.porEdificio();
+    this.dibujarAvisos();
+  });
+
   ngAfterViewInit(): void {
     this.configureLeafletIcons();
 
@@ -112,11 +119,13 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
     this.nodeLayer = L.layerGroup().addTo(this.map);
     this.edgeLayer = L.layerGroup().addTo(this.map);
+    this.avisoLayer = L.layerGroup().addTo(this.map);
 
     // this.loadCampusLayers();
     this.loadNodes();
     // this.loadEdges();
 
+    // Estos dos al final para quedar encima de todo
     this.selectionLayer = L.layerGroup().addTo(this.map);
     this.routeLayer = L.layerGroup().addTo(this.map);
 
@@ -129,6 +138,9 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     }
 
     void this.startGps();
+
+    this.avisos.escuchar();
+    this.dibujarAvisos();
   }
 
   ngOnDestroy(): void {
@@ -295,6 +307,41 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     L.Marker.prototype.options.icon = iconDefault;
   }
 
+  // ── Avisos en el mapa ─────────────────────────────────────
+
+  private dibujarAvisos(): void {
+    const capa = this.avisoLayer;
+    if (!capa) return;
+    capa.clearLayers();
+
+    this.avisos.porEdificio().forEach((lista, edificioId) => {
+      const nodo = this.findNodeById(edificioId);
+      if (!nodo || lista.length === 0) return;
+
+      const principal = infoTipo(lista[0].tipo); // el más severo
+      const icono = L.divIcon({
+        className: 'aviso-icon',
+        html: `<span>${principal.icono}</span>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 40],
+      });
+
+      // El texto viene de usuarios: se inserta con textContent, nunca como HTML (evita XSS)
+      const popup = document.createElement('div');
+      popup.className = 'aviso-popup';
+      for (const a of lista) {
+        const p = document.createElement('p');
+        p.textContent = `${infoTipo(a.tipo).icono} ${a.texto}`;
+        popup.appendChild(p);
+      }
+
+      L.marker(nodo.coords as L.LatLngExpression, { icon: icono, zIndexOffset: 1000 })
+        .bindPopup(popup)
+        .on('click', () => this.zone.run(() => this.selectEndNode(nodo)))
+        .addTo(capa);
+    });
+  }
+
   // ── Navegación y llegada ──────────────────────────────────
 
   private async startNavigation(): Promise<void> {
@@ -302,9 +349,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.llegada.set(null);
     this.navegando.set(true);
     this.navStart = Date.now();
-    this.notis.preparar();
-
-
+    void this.notis.preparar();
 
     // Reiniciamos el podómetro para contar solo esta ruta.
     // Si no hay permiso, la navegación sigue funcionando sin pasos.
@@ -313,24 +358,6 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
     // Por si ya estás parado junto al destino
     if (this.callbackCount() > 0) this.checkArrival(this.debugLat(), this.debugLng());
-  }
-
-
-
-    private async actualizarWidget(info: {
-    destino: string;
-    pasos: number;
-    distancia: number;
-    simulado: boolean;
-  }): Promise<void> {
-    if (!Capacitor.isNativePlatform()) return;
-
-    try {
-      const { widgetsActualizados } = await WidgetBridge.guardarRecorrido(info);
-      console.log(`🧩 Widget actualizado (${widgetsActualizados} en pantalla)`);
-    } catch (e) {
-      console.warn('🧩 No se pudo actualizar el widget:', e);
-    }
   }
 
   private checkArrival(lat: number, lng: number): void {
@@ -363,26 +390,44 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.routeMessage.set(`¡Llegaste a ${end.name}!`);
     console.log('🎉 Llegada:', this.llegada());
 
-        await Promise.all([
+    // Las tres al mismo tiempo; si una falla, las otras siguen
+    await Promise.all([
       this.vibrarLlegada(),
       this.notis.notificarLlegada(end.name, pasos, simulado),
       this.actualizarWidget({ destino: end.name, pasos, distancia, simulado }),
     ]);
-
-
-     await this.vibrarLlegada();
-        await Promise.all([
-      this.vibrarLlegada(),
-      this.notis.notificarLlegada(end.name, pasos, simulado),
-    ]);
   }
 
   private async vibrarLlegada(): Promise<void> {
+    // Primero la vibración directa: usa el motor del cel y es la más confiable
+    try {
+      await Haptics.vibrate({ duration: 600 });
+      console.log('📳 Vibración enviada');
+    } catch (e) {
+      console.warn('📳 vibrate() falló:', e);
+    }
+
+    // Después el patrón háptico de "éxito"; si falla, ya no afecta a la anterior
     try {
       await Haptics.notification({ type: NotificationType.Success });
-      await Haptics.vibrate({ duration: 1000  });
     } catch (e) {
-      console.warn('📳 No se pudo vibrar:', e);
+      console.warn('📳 notification() falló:', e);
+    }
+  }
+
+  private async actualizarWidget(info: {
+    destino: string;
+    pasos: number;
+    distancia: number;
+    simulado: boolean;
+  }): Promise<void> {
+    if (!Capacitor.isNativePlatform()) return;
+
+    try {
+      const { widgetsActualizados } = await WidgetBridge.guardarRecorrido(info);
+      console.log(`🧩 Widget actualizado (${widgetsActualizados} en pantalla)`);
+    } catch (e) {
+      console.warn('🧩 No se pudo actualizar el widget:', e);
     }
   }
 
@@ -435,12 +480,6 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.simulando.set(false);
   }
 
-  formatTime(segundos: number): string {
-    const m = Math.floor(segundos / 60);
-    const s = segundos % 60;
-    return m > 0 ? `${m} min ${s} s` : `${s} s`;
-  }
-
   // ── Búsqueda ──────────────────────────────────────────────
 
   updateEndQuery(event: Event): void {
@@ -483,7 +522,16 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
     this.activeRoute.set(route.nodes);
     this.routeDistance.set(route.distance);
-    this.routeMessage.set(`Ruta encontrada con ${route.nodes.length} paradas.`);
+
+    // Advertir si el destino tiene un aviso importante
+    const alerta = (this.avisos.porEdificio().get(endNode.id) ?? []).find(
+      (a) => a.tipo === 'cerrado' || a.tipo === 'mantenimiento',
+    );
+    this.routeMessage.set(
+      alerta
+        ? `⚠️ Ojo: ${infoTipo(alerta.tipo).etiqueta.toLowerCase()} — ${alerta.texto}`
+        : `Ruta encontrada con ${route.nodes.length} paradas.`,
+    );
 
     this.campusSocket.emitirRutaTrazada(endNode.id, endNode.name, startNode.name, route.distance);
     this.drawRoute(route.nodes);

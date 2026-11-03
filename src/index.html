@@ -12,7 +12,7 @@
   http-equiv="Content-Security-Policy"
   content="
     default-src 'self';
-    connect-src 'self' http://localhost:3000 ws://localhost:3000 https://raw.githubusercontent.com;
+    connect-src 'self' http://localhost:3000 ws://localhost:3000 https://raw.githubusercontent.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com;
     media-src 'self';
     img-src 'self' data: https://*.tile.openstreetmap.org https://raw.githubusercontent.com;
     style-src 'self' 'unsafe-inline';

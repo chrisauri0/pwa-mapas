@@ -12,16 +12,7 @@
     </div>
 
     @if (llegada(); as l) {
-      <div class="arrival-card">
-        <strong>🎉 ¡Llegaste a {{ l.destino }}!</strong>
-        <span>
-          👟 {{ l.pasos }} pasos{{ l.simulado ? ' (estimados)' : '' }}
-          · {{ l.distancia }} m · {{ formatTime(l.segundos) }}
-        </span>
-        @if (l.simulado) {
-          <small>Modo demostración</small>
-        }
-      </div>
+      <app-arrival-card [info]="l" />
     }
 
     @if (navegando()) {
@@ -79,5 +70,13 @@
         <button type="button" class="clear-btn" (click)="clearSelections()">✕</button>
       }
     </div>
+
+    @if (selectedEndNode(); as nodo) {
+      <app-avisos-edificio [nodo]="nodo" />
+    }
+
+    @if (!avisos.sincronizado()) {
+      <small class="offline-tag">📴 Sin conexión: mostrando avisos guardados</small>
+    }
   </footer>
 </section>

@@ -5,7 +5,10 @@
   width: 100%;
   overflow: hidden;
 }
-
+.offline-tag {
+  color: #92400e;
+  font-size: 12px;
+}
 .map-stage {
   flex: 1;
   position: relative;
@@ -199,32 +202,6 @@
 
 
 
-.arrival-card {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  animation: pop-in 0.3s ease-out;
-
-  strong {
-    font-size: 15px;
-    color: #065f46;
-  }
-  span {
-    font-size: 13px;
-    color: #047857;
-  }
-  small {
-    font-size: 11px;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-}
-
 .nav-row {
   display: flex;
   align-items: center;
@@ -254,13 +231,4 @@
   }
 }
 
-@keyframes pop-in {
-  from {
-    transform: scale(0.95);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
+

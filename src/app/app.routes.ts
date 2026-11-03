@@ -15,6 +15,12 @@ export const routes: Routes = [
   { path: 'home', component: Home },
   {path:  'consulta-web', component: ConsultaWebComponent},
   {path : 'usuarios', component: UsuariosComponent},
+
+  {
+  path: 'login',
+  loadComponent: () =>
+    import('./pages/login/login.component').then(m => m.LoginComponent),
+},
   { path: 'prueba-ubicacion',
   loadComponent: () =>
     import('./pages/prueba-ubicacion/prueba-ubicacion.component')
