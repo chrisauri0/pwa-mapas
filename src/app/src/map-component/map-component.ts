@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { BackButtonService } from '../../core/services/back-button.service';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -20,7 +21,7 @@ import { CAMPUS_EDGES, CAMPUS_NODES } from '../hooks/graphs/graph-campus';
 import { CampusNode } from '../hooks/models/models-graph';
 import { CAMPUS_LAYERS } from '../hooks/models/models-map';
 import { CampusSocketService } from '../services/campus-socket.service';
-import { ArrivalCardComponent, LlegadaInfo } from '../arrival-card/arrival-card';
+import { ArrivalCardComponent, LlegadaInfo } from '../../arrival-card/arrival-card';
 import { AvisosEdificioComponent } from '../avisos-edificio/avisos-edificio';
 
 import { StepCounterService } from '../../core/services/step-counter.service';
@@ -47,6 +48,8 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   private readonly notis = inject(ArrivalNotificationService);
   readonly steps = inject(StepCounterService);
   readonly avisos = inject(AvisosService);
+    private readonly back = inject(BackButtonService);
+  private readonly quitarAtras = this.back.registrar(() => this.manejarAtras());
 
   // Pon en false para la entrega final y desaparece el botón de demo
   readonly modoDemo = true;
@@ -149,7 +152,31 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     if (this.gpsWatchId) void Geolocation.clearWatch({ id: this.gpsWatchId });
     this.resizeObserver?.disconnect();
     this.map?.remove();
+        this.quitarAtras();
   }
+
+//boton atras
+  // ── Botón atrás nativo ────────────────────────────────────
+
+  /** Cierra lo que esté abierto, de lo más reciente a lo más general */
+  private manejarAtras(): boolean {
+    if (this.searchActive()) {
+      this.searchActive.set(false);
+      return true;
+    }
+    if (this.simulando()) {
+      this.stopSimulation();
+      this.routeMessage.set('Demo cancelada.');
+      return true;
+    }
+    if (this.selectedEndNode() || this.navegando() || this.llegada()) {
+      this.clearSelections();
+      return true;
+    }
+    return false; // nada que cerrar: que el servicio regrese de pantalla
+  }
+
+
 
   // ── GPS ───────────────────────────────────────────────────
 
