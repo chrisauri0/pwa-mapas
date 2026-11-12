@@ -1,0 +1,117 @@
+ENTORNO DE EJECUCIÓN
+Fecha         : 2026-11-10 18:52:41 CST
+Equipo        : nixos
+Sistema       : Linux 6.18.45 x86_64
+Node          : v22.23.3
+pnpm          : 10.33.0
+Git (commit)  : bfc4953
+Git (rama)    : main
+Cambios sin commit:
+    M angular.json
+    M package.json
+    M pnpm-lock.yaml
+    M src/app/consulta-web/consulta-web.spec.ts
+    M src/app/core/firebase.ts
+    M src/app/core/services/avisos.service.ts
+    M src/app/src/map-component/map-component.ts
+    M src/app/usuarios/usuarios.spec.ts
+   ?? eslint.config.js
+   ?? evidencia-e2e/
+   ?? evidencia-whitebox-reintento/
+   ?? evidencia-whitebox/
+   ?? firebase.emulator.json
+   ?? firestore-debug.log
+   ?? firestore.test.rules
+   ?? playwright-report/
+   ?? playwright.config.ts
+   ?? src/app/core/services/avisos.logic.spec.ts
+   ?? src/app/core/services/avisos.logic.ts
+   ?? src/app/core/services/avisos.logic.whitebox.spec.ts
+   ?? src/app/core/services/avisos.repository.ts
+   ?? src/app/core/services/ruta.logic.spec.ts
+   ?? src/app/core/services/ruta.logic.ts
+   ?? test-results/
+   ?? tests/
+   ?? undici
+   ?? vitest.integration.config.ts
+   ?? whitebox-fase1-2.sh
+
+
+==================================================================
+[03-cobertura] Cobertura de instrucciones y ramas de avisos.logic y ruta.logic
+Comando : pnpm exec ng test --watch=false --coverage      --include='src/app/core/services/*.spec.ts'      --coverage-include='src/app/core/services/avisos.logic.ts'      --coverage-include='src/app/core/services/ruta.logic.ts'      --coverage-reporters=text --coverage-reporters=html
+Inicio  : 2026-11-10 18:52:42 CST
+==================================================================
+❯ Building...
+✔ Building...
+Initial chunk files                             | Names                                        |  Raw size
+styles.css                                      | styles                                       |  13.21 kB | 
+spec-app-core-services-ruta.logic.js            | spec-app-core-services-ruta.logic            |   7.42 kB | 
+spec-app-core-services-avisos.logic.whitebox.js | spec-app-core-services-avisos.logic.whitebox |   6.88 kB | 
+spec-app-core-services-avisos.logic.js          | spec-app-core-services-avisos.logic          |   5.94 kB | 
+chunk-RSTWSNOR.js                               | -                                            |   4.75 kB | 
+chunk-OTD63G4L.js                               | -                                            |   2.28 kB | 
+init-testbed.js                                 | init-testbed                                 |   1.21 kB | 
+vitest-mock-patch.js                            | vitest-mock-patch                            | 969 bytes | 
+
+                                                | Initial total                                |  42.68 kB
+
+Application bundle generation complete. [3.227 seconds] - 2026-11-11T00:52:47.661Z
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: RouterLink is not used within the template of App[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/app.ts:9:26:
+[37m      9 │   imports: [RouterOutlet, [32mRouterLink[37m],
+        ╵                           [32m~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: All imports are unused[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/consulta-web/consulta-web.ts:8:2:
+[37m      8 │   [32mimports[37m: [JsonPipe],
+        ╵   [32m~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: RouterOutlet is not used within the template of Home[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/src/home/home.ts:8:24:
+[37m      8 │   imports: [RouterLink, [32mRouterOutlet[37m],
+        ╵                         [32m~~~~~~~~~~~~[0m
+
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.6 [39m[90m/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m [30m[42m angular-pwa [49m[39m src/app/core/services/avisos.logic.spec.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 38[2mms[22m[39m
+ [32m✓[39m [30m[42m angular-pwa [49m[39m src/app/core/services/avisos.logic.whitebox.spec.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m✓[39m [30m[42m angular-pwa [49m[39m src/app/core/services/ruta.logic.spec.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m79 passed[39m[22m[90m (79)[39m
+[2m   Start at [22m 18:52:47
+[2m   Duration [22m 2.21s[2m (transform 221ms, setup 1.74s, import 181ms, tests 88ms, environment 3.11s)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-----------------|---------|----------|---------|---------|-------------------
+File             | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-----------------|---------|----------|---------|---------|-------------------
+All files        |     100 |    94.33 |     100 |     100 |                   
+ avisos.logic.ts |     100 |    95.23 |     100 |     100 | 85                
+ ruta.logic.ts   |     100 |    93.75 |     100 |     100 | 70,86             
+-----------------|---------|----------|---------|---------|-------------------
+------------------------------------------------------------------
+Código de salida: 0   Duración: 8 s   Fin: 2026-11-10 18:52:50 CST
+
+==================================================================
+[04-complejidad] Complejidad ciclomática medida por ESLint (umbral 6), con el archivo de cada método
+Comando : pnpm exec eslint src/app --rule '{"complexity":["warn",6]}' 2>&1 | awk '/^\//{f=$0} /complexity/{print f " -> " $0; n++} END{if(!n) print "(sin resultados de complexity: revisar la salida de eslint)"}'
+Inicio  : 2026-11-10 18:52:50 CST
+==================================================================
+/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas/src/app/core/services/avisos.logic.ts ->   89:8  warning  Function 'validarAviso' has a complexity of 10. Maximum allowed is 6  complexity
+/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas/src/app/core/services/ruta.logic.ts ->   46:8  warning  Function 'buscarRutaMasCorta' has a complexity of 20. Maximum allowed is 6  complexity
+/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas/src/app/src/dashboard-component/dashboard-component.ts ->   62:3   warning  Method 'handleKeydown' has a complexity of 11. Maximum allowed is 6  complexity
+/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas/src/app/src/map-component/map-component.ts ->   397:3  warning  Async method 'handleArrival' has a complexity of 7. Maximum allowed is 6  complexity
+/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas/src/app/usuarios/usuarios.ts ->   23:3  warning  Async method 'guardar' has a complexity of 9. Maximum allowed is 6  complexity
+------------------------------------------------------------------
+Código de salida: 0   Duración: 3 s   Fin: 2026-11-10 18:52:53 CST

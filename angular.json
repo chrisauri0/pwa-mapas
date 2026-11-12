@@ -2,7 +2,8 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "cli": {
-    "packageManager": "pnpm"
+    "packageManager": "pnpm",
+    "schematicCollections": ["angular-eslint"]
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -33,17 +34,15 @@
           },
           "configurations": {
             "production": {
-
-                 "optimization": {
-                    "scripts": true,
+              "optimization": {
+                "scripts": true,
                 "styles": {
                   "minify": true,
                   "inlineCritical": false
                 },
                 "fonts": true
-                },
-
-                "budgets": [
+              },
+              "budgets": [
                 {
                   "type": "initial",
                   "maximumWarning": "1MB",
@@ -80,6 +79,12 @@
         },
         "test": {
           "builder": "@angular/build:unit-test"
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"]
+          }
         }
       }
     }

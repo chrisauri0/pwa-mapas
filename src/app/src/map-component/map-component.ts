@@ -9,6 +9,7 @@ import {
   computed,
   effect,
   inject,
+  isDevMode,
   signal,
 } from '@angular/core';
 
@@ -16,7 +17,7 @@ import * as L from 'leaflet';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation, Position } from '@capacitor/geolocation';
 import { Haptics, NotificationType } from '@capacitor/haptics';
-
+import { buscarRutaMasCorta } from '../../core/services/ruta.logic';
 import { CAMPUS_EDGES, CAMPUS_NODES } from '../hooks/graphs/graph-campus';
 import { CampusNode } from '../hooks/models/models-graph';
 import { CAMPUS_LAYERS } from '../hooks/models/models-map';
@@ -48,15 +49,18 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   private readonly notis = inject(ArrivalNotificationService);
   readonly steps = inject(StepCounterService);
   readonly avisos = inject(AvisosService);
-    private readonly back = inject(BackButtonService);
+  private readonly back = inject(BackButtonService);
   private readonly quitarAtras = this.back.registrar(() => this.manejarAtras());
 
-  // Pon en false para la entrega final y desaparece el botón de demo
-  readonly modoDemo = true;
+  // El botón de demo solo aparece en compilaciones de desarrollo (ng serve / build debug).
+  // En el APK de producción desaparece solo.
+  readonly modoDemo = isDevMode();
 
   map?: L.Map;
   gpsMarker?: L.CircleMarker;
   private gpsWatchId?: string;
+  private gpsRetryTimer?: ReturnType<typeof setTimeout>;
+  private destruido = false;
   private resizeObserver?: ResizeObserver;
   private nodeLayer?: L.LayerGroup;
   private edgeLayer?: L.LayerGroup;
@@ -108,10 +112,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.configureLeafletIcons();
 
-    this.map = L.map('campus-map', { bounceAtZoomLimits: false }).setView(
-      [20.656, -100.405],
-      18,
-    );
+    this.map = L.map('campus-map', { bounceAtZoomLimits: false }).setView([20.656, -100.405], 18);
 
     this.map.createPane('routePane').style.zIndex = '650';
 
@@ -147,15 +148,17 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destruido = true;
+    if (this.gpsRetryTimer) clearTimeout(this.gpsRetryTimer);
     this.stopSimulation();
     if (this.steps.midiendo()) void this.steps.detener();
     if (this.gpsWatchId) void Geolocation.clearWatch({ id: this.gpsWatchId });
     this.resizeObserver?.disconnect();
     this.map?.remove();
-        this.quitarAtras();
+    this.quitarAtras();
   }
 
-//boton atras
+  //boton atras
   // ── Botón atrás nativo ────────────────────────────────────
 
   /** Cierra lo que esté abierto, de lo más reciente a lo más general */
@@ -175,8 +178,6 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     }
     return false; // nada que cerrar: que el servicio regrese de pantalla
   }
-
-
 
   // ── GPS ───────────────────────────────────────────────────
 
@@ -238,7 +239,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
             const msg = error instanceof Error ? error.message : String(error ?? '');
             if (/in time|timeout/i.test(msg)) {
               console.log('🔁 Reintentando GPS en 3 s...');
-              setTimeout(() => void this.startWatch(), 3000);
+              if (this.gpsRetryTimer) clearTimeout(this.gpsRetryTimer);
+              this.gpsRetryTimer = setTimeout(() => {
+                if (!this.destruido) void this.startWatch();
+              }, 3000);
             }
             return;
           }
@@ -309,8 +313,8 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     let nearestId = '';
 
     this.nodes().forEach((node) => {
-      const coords = node.coords as [number, number];
-      const dist = Math.sqrt(Math.pow(lat - coords[0], 2) + Math.pow(lng - coords[1], 2));
+      // Distancia real en metros (haversine de Leaflet); los grados de lat y lng no miden lo mismo
+      const dist = L.latLng(lat, lng).distanceTo(node.coords as L.LatLngExpression);
       if (dist < minDist) {
         minDist = dist;
         nearestId = node.id;
@@ -645,7 +649,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   }
 
   private normalizeText(value: string): string {
-    return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
   }
 
   private findNodeById(nodeId: string): CampusNode | undefined {
@@ -656,79 +663,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     startId: string,
     endId: string,
   ): { nodes: CampusNode[]; distance: number } | null {
-    const adjacency = this.buildAdjacency();
-    const distances = new Map<string, number>();
-    const previous = new Map<string, string | null>();
-    const unvisited = new Set<string>();
-
-    this.nodes().forEach((node) => {
-      distances.set(node.id, Infinity);
-      previous.set(node.id, null);
-      unvisited.add(node.id);
-    });
-
-    distances.set(startId, 0);
-
-    while (unvisited.size > 0) {
-      let currentId: string | undefined;
-      let currentDistance = Infinity;
-
-      unvisited.forEach((nodeId) => {
-        const d = distances.get(nodeId) ?? Infinity;
-        if (d < currentDistance) {
-          currentDistance = d;
-          currentId = nodeId;
-        }
-      });
-
-      if (!currentId || currentDistance === Infinity) break;
-
-      const selectedId = currentId;
-      unvisited.delete(selectedId);
-      if (selectedId === endId) break;
-
-      (adjacency.get(selectedId) ?? []).forEach(({ nodeId, distance }) => {
-        if (!unvisited.has(nodeId)) return;
-        const tentative = currentDistance + distance;
-        if (tentative < (distances.get(nodeId) ?? Infinity)) {
-          distances.set(nodeId, tentative);
-          previous.set(nodeId, selectedId);
-        }
-      });
-    }
-
-    const finalDistance = distances.get(endId) ?? Infinity;
-    if (finalDistance === Infinity) return null;
-
-    const routeIds: string[] = [];
-    let cur: string | null = endId;
-    while (cur) {
-      routeIds.unshift(cur);
-      cur = previous.get(cur) ?? null;
-    }
-
-    const routeNodes = routeIds
-      .map((id) => this.findNodeById(id))
-      .filter((n): n is CampusNode => Boolean(n));
-
-    if (routeNodes.length === 0 || routeNodes[0].id !== startId) return null;
-
-    return { nodes: routeNodes, distance: finalDistance };
-  }
-
-  private buildAdjacency(): Map<string, Array<{ nodeId: string; distance: number }>> {
-    const adjacency = new Map<string, Array<{ nodeId: string; distance: number }>>();
-
-    this.edges.forEach((edge) => {
-      const from = adjacency.get(edge.from) ?? [];
-      const to = adjacency.get(edge.to) ?? [];
-      from.push({ nodeId: edge.to, distance: edge.distance });
-      to.push({ nodeId: edge.from, distance: edge.distance });
-      adjacency.set(edge.from, from);
-      adjacency.set(edge.to, to);
-    });
-
-    return adjacency;
+    return buscarRutaMasCorta(this.nodes(), this.edges, startId, endId);
   }
 
   private drawRoute(routeNodes: CampusNode[]): void {
@@ -739,12 +674,15 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
     if (routeNodes.length === 0) return;
 
-    L.polyline(routeNodes.map((n) => n.coords), {
-      color: '#ef4444',
-      weight: 8,
-      opacity: 1,
-      pane: 'routePane',
-    }).addTo(this.routeLayer);
+    L.polyline(
+      routeNodes.map((n) => n.coords),
+      {
+        color: '#ef4444',
+        weight: 8,
+        opacity: 1,
+        pane: 'routePane',
+      },
+    ).addTo(this.routeLayer);
 
     const startNode = routeNodes[0];
     const endNode = routeNodes[routeNodes.length - 1];

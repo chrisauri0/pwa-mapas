@@ -1,0 +1,29 @@
+
+==================================================================
+[05-lint] Análisis estático: ng lint
+Comando : pnpm exec ng lint
+Inicio  : 2026-11-10 18:24:38 CST
+==================================================================
+
+Linting "angular-pwa"...
+
+/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas/src/app/app.ts
+  4:10  error  'Router' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas/src/app/consulta-web/consulta-web.ts
+  16:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas/src/app/src/dashboard-component/dashboard-component.ts
+  53:3   error  Lifecycle methods should not be empty                              @angular-eslint/no-empty-lifecycle-method
+  53:20  error  Unexpected empty method 'ngOnInit'                                 @typescript-eslint/no-empty-function
+  67:9   error  The value assigned to 'next' is not used in subsequent statements  no-useless-assignment
+
+/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas/src/app/src/home/home.ts
+  17:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+
+✖ 6 problems (6 errors, 0 warnings)
+
+Lint errors found in the listed files.
+
+------------------------------------------------------------------
+Código de salida: 1   Duración: 3 s   Fin: 2026-11-10 18:24:41 CST

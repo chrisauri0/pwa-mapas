@@ -1,0 +1,11 @@
+🔴 01-pruebas-unitarias  código 1   Pruebas unitarias y white box (pnpm test:unit)
+🟢 02-instalar-cobertura  código 0   Instalar el proveedor de cobertura (@vitest/coverage-v8)
+🔴 03-cobertura  código 1   Cobertura de instrucciones y ramas de avisos.logic y ruta.logic
+🟢 04-complejidad  código 0   Complejidad ciclomática medida por ESLint (umbral 6)
+🔴 05-lint  código 1   Análisis estático: ng lint
+🟢 06-tsc  código 0   Análisis estático: compilación de tipos (tsc --noEmit)
+🔴 07-audit  código 1   Dependencias con vulnerabilidades conocidas (pnpm audit)
+🔴 08-outdated  código 1   Dependencias desactualizadas (pnpm outdated)
+🟢 09-secretos  código 0   Búsqueda de credenciales y claves en el código versionado
+🟢 10-archivos-sensibles  código 0   Archivos sensibles versionados (.env, google-services, keystore)
+🟢 11-version  código 0   Versión del código evaluado

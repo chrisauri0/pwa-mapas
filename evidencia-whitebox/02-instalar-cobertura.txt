@@ -1,0 +1,23 @@
+
+==================================================================
+[02-instalar-cobertura] Instalar el proveedor de cobertura (@vitest/coverage-v8)
+Comando : pnpm add -D @vitest/coverage-v8
+Inicio  : 2026-11-10 18:24:21 CST
+==================================================================
+Progress: resolved 0, reused 1, downloaded 0, added 0
+Progress: resolved 391, reused 322, downloaded 0, added 0
+Progress: resolved 1193, reused 1085, downloaded 0, added 0
+ WARN  5 deprecated subdependencies found: glob@10.5.0, json-ptr@3.1.1, node-domexception@1.0.0, uuid@7.0.3, uuid@9.0.1
+Packages: +3 -3
++++---
+Progress: resolved 1231, reused 1123, downloaded 0, added 0, done
+ WARN  Issues with peer dependencies found
+.
+├─┬ @vitest/coverage-v8 5.1.0
+│ └── ✕ unmet peer vitest@5.1.0: found 4.1.6
+└─┬ vitest 4.1.6
+  └── ✕ unmet peer @vitest/coverage-v8@4.1.6: found 5.1.0
+
+Done in 3.5s using pnpm v10.33.0
+------------------------------------------------------------------
+Código de salida: 0   Duración: 4 s   Fin: 2026-11-10 18:24:25 CST

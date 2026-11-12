@@ -1,0 +1,2 @@
+🟢 03-cobertura  código 0   Cobertura de instrucciones y ramas de avisos.logic y ruta.logic
+🟢 04-complejidad  código 0   Complejidad ciclomática medida por ESLint (umbral 6), con el archivo de cada método

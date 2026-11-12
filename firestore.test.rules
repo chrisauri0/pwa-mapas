@@ -1,0 +1,35 @@
+// SOLO PARA PRUEBAS EN EL EMULADOR. NO DESPLEGAR.
+// prac9-db-sync es compartido con la práctica 9: si despliegas este archivo
+// reemplazarías las reglas de las demás colecciones. El bloque `avisos` es una
+// copia exacta del que ya tienes en producción; si lo cambias allá, cámbialo aquí.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /avisos/{avisoId} {
+      // Cualquiera puede leer (la app funciona sin cuenta)
+      allow read: if true;
+
+      // Solo usuarios autenticados, a su propio nombre, con datos válidos
+      allow create: if request.auth != null
+        // Para restringir a correo institucional, descomenta y ajusta:
+        // && request.auth.token.email.matches('.*@uteq[.]edu[.]mx$')
+        && request.resource.data.autorUid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+             'edificioId', 'edificioNombre', 'tipo', 'texto',
+             'autorUid', 'autorNombre', 'creadoEn', 'expiraEn'])
+        && request.resource.data.tipo in ['cerrado', 'mantenimiento', 'evento', 'aviso']
+        && request.resource.data.texto is string
+        && request.resource.data.texto.size() > 0
+        && request.resource.data.texto.size() <= 280
+        && request.resource.data.creadoEn == request.time
+        && request.resource.data.expiraEn > request.time
+        && request.resource.data.expiraEn <= request.time + duration.value(8, 'd');
+
+      // Solo el autor puede borrar; nadie puede editar
+      allow delete: if request.auth != null && resource.data.autorUid == request.auth.uid;
+      allow update: if false;
+    }
+
+  }
+}

@@ -1,0 +1,38 @@
+ENTORNO DE EJECUCIÓN
+Fecha         : 2026-11-10 18:52:41 CST
+Equipo        : nixos
+Sistema       : Linux 6.18.45 x86_64
+Node          : v22.23.3
+pnpm          : 10.33.0
+Git (commit)  : bfc4953
+Git (rama)    : main
+Cambios sin commit:
+    M angular.json
+    M package.json
+    M pnpm-lock.yaml
+    M src/app/consulta-web/consulta-web.spec.ts
+    M src/app/core/firebase.ts
+    M src/app/core/services/avisos.service.ts
+    M src/app/src/map-component/map-component.ts
+    M src/app/usuarios/usuarios.spec.ts
+   ?? eslint.config.js
+   ?? evidencia-e2e/
+   ?? evidencia-whitebox-reintento/
+   ?? evidencia-whitebox/
+   ?? firebase.emulator.json
+   ?? firestore-debug.log
+   ?? firestore.test.rules
+   ?? playwright-report/
+   ?? playwright.config.ts
+   ?? src/app/core/services/avisos.logic.spec.ts
+   ?? src/app/core/services/avisos.logic.ts
+   ?? src/app/core/services/avisos.logic.whitebox.spec.ts
+   ?? src/app/core/services/avisos.repository.ts
+   ?? src/app/core/services/ruta.logic.spec.ts
+   ?? src/app/core/services/ruta.logic.ts
+   ?? test-results/
+   ?? tests/
+   ?? undici
+   ?? vitest.integration.config.ts
+   ?? whitebox-fase1-2.sh
+
