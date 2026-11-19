@@ -1,0 +1,16 @@
+Node v22.23.4  CPU: x64
+Corrección: 15129 pares de nodos del campus (123 nodos, 138 aristas); distancias distintas: 0
+Ruta más larga probada: camino-industrial-estatua-2 → entrada-pidet = 201 m
+
+Grafo real del campus (2,000 repeticiones):
+  antes  : prom 0.1293 ms  P95 0.1842 ms  máx 1.6119 ms
+  después: prom 0.0320 ms  P95 0.0508 ms  máx 0.2676 ms
+
+Escalabilidad (cuadrícula, ruta de una esquina a la opuesta):
+  nodos | aristas | antes prom (ms) | después prom (ms) | mejora
+    121 |     220 |          0.1498 |            0.0880 | 1.7x
+   1024 |    1984 |          9.4069 |            0.9258 | 10.2x
+   5041 |    9940 |        217.5708 |            7.8160 | 27.8x
+  10000 |   19800 |        952.0509 |           16.8535 | 56.5x
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/claude/proj/pwa-mapas/package.json.

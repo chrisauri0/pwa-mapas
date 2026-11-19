@@ -1,0 +1,77 @@
+# Integración continua de Mapa UTEQ (Prácticas 13 y 14)
+# Se ejecuta en cada push y en cada pull request:
+#   1) calidad:      lint + pruebas unitarias + build de producción
+#   2) integracion:  pruebas contra el emulador de Firebase (Auth + Firestore + reglas) y contra un servidor HTTP local
+# Nunca toca el proyecto real de Firebase: el emulador usa el proyecto "demo-avisos-test".
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  calidad:
+    name: Lint, unitarias y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4 # toma la versión de "packageManager" en package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Pruebas unitarias
+        run: pnpm test:unit
+
+      - name: Build de producción
+        run: pnpm build
+
+  integracion:
+    name: Integración (emulador de Firebase)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # El emulador de Firestore corre sobre Java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Guardar en caché los emuladores de Firebase
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Pruebas de integración
+        run: pnpm test:integration

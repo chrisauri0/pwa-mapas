@@ -1,0 +1,41 @@
+Práctica 12 · Fases 3 y 4 · etiqueta "medicion"
+Fecha: 2026-11-17T20:10:52.404Z  Proyecto: prac9-db-sync  Node: v22.23.3
+Equipo cliente: 4 ·  Intel(R) Core(TM) i5-7300U CPU @ 2.60GHz ·
+
+== Siembra: 300 avisos de prueba en 4 edificios (para que la colección tenga volumen) ==
+🟢 300 de 300 documentos creados en 3.7 s
+
+== FASE 4 · Consultas (10 repeticiones cada una) ==
+consulta | registros | bytes | prom (ms) | P95 (ms) | máx (ms) | HTTP
+🟡 Primera respuesta HTTP 429: { "error": { "code": 429, "message": "Quota exceeded.", "status": "RESOURCE_EXHAUSTED" } } 
+individual por id | 0 | 107 | 103 | 221.6 | 221.6 | 429
+conjunto pequeño (5) | 0 | 109 | 88.7 | 102.8 | 102.8 | 429
+conjunto grande (todos los vigentes) | 0 | 109 | 91 | 98.5 | 98.5 | 429
+con filtro (edificio = biblioteca) | 0 | 109 | 89.9 | 99.3 | 99.3 | 429
+app ANTES (todos los vigentes, sin límite) | 0 | 109 | 88.5 | 95.3 | 95.3 | 429
+app DESPUÉS (orden por vencimiento, límite 100) | 0 | 109 | 91.2 | 103.6 | 103.6 | 429
+
+== FASE 4 · Concurrencia ==
+🟡 Primera respuesta HTTP 409: { "error": { "code": 409, "message": "Document already exists: projects/prac9-db-sync/databases/(default)/documents/avisos/p12mwl4nrqby6vcg2", "status": "ALREADY_EXISTS" } } 
+🟢 10 creaciones simultáneas del MISMO id (con "no debe existir"): 1 exitosa, 9 con 409 CONFLICT; el documento existe: false
+🟡 Primera respuesta HTTP 403: { "error": { "code": 403, "message": "Missing or insufficient permissions.", "status": "PERMISSION_DENIED" } } 
+🔴 10 actualizaciones simultáneas del mismo registro: {"403":10}; el texto quedó intacto: false (las reglas prohíben editar)
+🔴 Integridad tras 30 escrituras simultáneas a ids distintos: 30 confirmadas, 0 leídas del servidor
+
+== FASE 3 · Lectura (GET lista de 5 avisos): 20 solicitudes por usuario ==
+usuarios | RPS   | prom (ms) | P90 (ms) | P95 (ms) | máx (ms) | errores % | códigos HTTP
+       1 |  10.4 |      96.1 |     89.5 |     92.6 |    312.8 |       100 | {"429":20}
+       5 |  54.9 |      87.5 |     97.4 |    105.7 |    175.4 |       100 | {"429":100}
+      10 |  95.3 |      91.4 |     98.8 |    124.9 |    406.5 |       100 | {"429":200}
+      20 | 192.7 |      90.2 |     94.3 |    124.3 |    531.6 |       100 | {"429":400}
+      50 | 354.2 |     103.1 |       99 |    140.2 |   1245.4 |       100 | {"429":1000}
+
+== FASE 3 · Escritura (crear un aviso): 20 solicitudes por usuario ==
+usuarios | RPS   | prom (ms) | P90 (ms) | P95 (ms) | máx (ms) | errores % | códigos HTTP
+       1 |     8 |     125.6 |    133.1 |    136.1 |    142.5 |         0 | {"200":20}
+       5 |    38 |     129.4 |    146.3 |      160 |    237.3 |         0 | {"200":100}
+      10 |  63.4 |     142.4 |    177.3 |      213 |    504.5 |         0 | {"200":200}
+      20 | 113.9 |     152.6 |    190.8 |    223.1 |    732.2 |         0 | {"200":400}
+      50 | 224.5 |     174.1 |    228.3 |    329.6 |   1879.5 |         0 | {"200":1000}
+
+🟢 Limpieza: 2051 de 2051 documentos de prueba borrados

@@ -3,7 +3,9 @@ import {
   collection,
   deleteDoc,
   doc,
+  limit,
   onSnapshot,
+  orderBy,
   query,
   serverTimestamp,
   setDoc,
@@ -11,6 +13,9 @@ import {
   type Firestore,
 } from 'firebase/firestore';
 import type { Aviso, AvisosRepositorio, NuevoAviso, PublicacionAviso } from './avisos.logic';
+
+/** Tope de avisos que se descargan y escuchan a la vez. */
+export const MAX_AVISOS = 100;
 
 /**
  * Repositorio real de avisos sobre Firestore.
@@ -50,7 +55,13 @@ export class FirestoreAvisosRepo implements AvisosRepositorio {
     onData: (avisos: Aviso[], desdeCache: boolean) => void,
     onError: (e: unknown) => void,
   ): () => void {
-    const q = query(collection(this.db, 'avisos'), where('expiraEn', '>', Timestamp.now()));
+    // Solo los MAX_AVISOS que vencen más tarde (los más recientes): antes traía todos los vigentes del campus
+    const q = query(
+      collection(this.db, 'avisos'),
+      where('expiraEn', '>', Timestamp.now()),
+      orderBy('expiraEn', 'desc'),
+      limit(MAX_AVISOS),
+    );
 
     return onSnapshot(
       q,

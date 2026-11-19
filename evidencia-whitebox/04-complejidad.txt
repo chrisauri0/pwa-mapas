@@ -1,13 +1,14 @@
 
 ==================================================================
-[04-complejidad] Complejidad ciclomática medida por ESLint (umbral 6)
-Comando : pnpm exec eslint src/app --rule '{"complexity":["warn",6]}' 2>&1 | grep -i complexity || echo '(ningún método supera el umbral)'
-Inicio  : 2026-11-10 18:24:35 CST
+[04-complejidad] Complejidad ciclomática medida por ESLint (umbral 6), con el archivo de cada método
+Comando : pnpm exec eslint src/app --rule '{"complexity":["warn",6]}' 2>&1 | awk '/^\//{f=$0} /complexity/{print f " -> " $0; n++} END{if(!n) print "(sin resultados de complexity: revisar la salida de eslint)"}'
+Inicio  : 2026-11-12 16:05:01 CST
 ==================================================================
-  89:8  warning  Function 'validarAviso' has a complexity of 10. Maximum allowed is 6  complexity
-  46:8  warning  Function 'buscarRutaMasCorta' has a complexity of 20. Maximum allowed is 6  complexity
-  62:3   warning  Method 'handleKeydown' has a complexity of 11. Maximum allowed is 6  complexity
-  397:3  warning  Async method 'handleArrival' has a complexity of 7. Maximum allowed is 6  complexity
-  23:3  warning  Async method 'guardar' has a complexity of 9. Maximum allowed is 6  complexity
+/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas/src/app/core/services/avisos.logic.ts ->   89:8  warning  Function 'validarAviso' has a complexity of 10. Maximum allowed is 6  complexity
+/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas/src/app/core/services/ruta.logic.ts ->   46:8  warning  Function 'buscarRutaMasCorta' has a complexity of 20. Maximum allowed is 6  complexity
+/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas/src/app/src/dashboard-component/dashboard-component.ts ->   62:3   warning  Method 'handleKeydown' has a complexity of 11. Maximum allowed is 6  complexity
+/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas/src/app/src/map-component/map-component.ts ->   236:26  warning  Arrow function has a complexity of 7. Maximum allowed is 6                complexity
+/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas/src/app/src/map-component/map-component.ts ->   406:3   warning  Async method 'handleArrival' has a complexity of 7. Maximum allowed is 6  complexity
+/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas/src/app/usuarios/usuarios.ts ->   23:3  warning  Async method 'guardar' has a complexity of 9. Maximum allowed is 6  complexity
 ------------------------------------------------------------------
-Código de salida: 0   Duración: 3 s   Fin: 2026-11-10 18:24:38 CST
+Código de salida: 0   Duración: 3 s   Fin: 2026-11-12 16:05:04 CST

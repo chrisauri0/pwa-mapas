@@ -1,7 +1,7 @@
 🔴 01-pruebas-unitarias  código 1   Pruebas unitarias y white box (pnpm test:unit)
 🟢 02-instalar-cobertura  código 0   Instalar el proveedor de cobertura (@vitest/coverage-v8)
-🔴 03-cobertura  código 1   Cobertura de instrucciones y ramas de avisos.logic y ruta.logic
-🟢 04-complejidad  código 0   Complejidad ciclomática medida por ESLint (umbral 6)
+🟢 03-cobertura  código 0   Cobertura de instrucciones y ramas de avisos.logic y ruta.logic
+🟢 04-complejidad  código 0   Complejidad ciclomática medida por ESLint (umbral 6), con el archivo de cada método
 🔴 05-lint  código 1   Análisis estático: ng lint
 🟢 06-tsc  código 0   Análisis estático: compilación de tipos (tsc --noEmit)
 🔴 07-audit  código 1   Dependencias con vulnerabilidades conocidas (pnpm audit)

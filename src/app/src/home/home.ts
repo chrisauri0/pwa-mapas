@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { RouterLink } from '@angular/router';
 import { Router } from '@angular/router';
@@ -14,7 +14,7 @@ export class Home {
   public menuOpen = false;
 
 
-  constructor(private router: Router) {}
+  private readonly router = inject(Router);
 
 
 

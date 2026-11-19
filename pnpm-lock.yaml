@@ -106,7 +106,7 @@ importers:
         specifier: ^1.9.21
         version: 1.9.21
       '@vitest/coverage-v8':
-        specifier: ^4.1.6
+        specifier: 4.1.6
         version: 4.1.6(vitest@4.1.6)
       angular-eslint:
         specifier: 21.4.0

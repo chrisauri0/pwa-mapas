@@ -2,8 +2,8 @@
 ==================================================================
 [10-archivos-sensibles] Archivos sensibles versionados (.env, google-services, keystore)
 Comando : git ls-files | grep -Ei '\.env|google-services|keystore|\.jks' || echo '(ninguno versionado)'
-Inicio  : 2026-11-10 18:24:50 CST
+Inicio  : 2026-11-12 16:05:16 CST
 ==================================================================
 .envrc
 ------------------------------------------------------------------
-Código de salida: 0   Duración: 0 s   Fin: 2026-11-10 18:24:50 CST
+Código de salida: 0   Duración: 0 s   Fin: 2026-11-12 16:05:16 CST

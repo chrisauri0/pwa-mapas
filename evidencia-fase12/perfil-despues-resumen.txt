@@ -1,0 +1,16 @@
+Dispositivo: 2303ERA42L · Android 15 · versionName=1.0 · 8 núcleos
+Etiqueta: despues   Fecha: 2026-11-17 14:19:10 CST   Duración: 90 s, cada 2 s
+CPU promedio: 6.9 %  CPU máximo: 34.6 %  (de todos los núcleos)
+RAM inicial: 145.4 MB  RAM máxima: 469.8 MB  RAM final: 238.0 MB
+--- Fluidez de la interfaz (gfxinfo) ---
+Total frames rendered: 1713
+Janky frames: 415 (24.23%)
+Janky frames (legacy): 1439 (84.00%)
+50th percentile: 24ms
+90th percentile: 38ms
+95th percentile: 53ms
+99th percentile: 133ms
+Number Missed Vsync: 102
+Number Slow UI thread: 176
+Number Slow bitmap uploads: 1
+Number Slow issue draw commands: 415

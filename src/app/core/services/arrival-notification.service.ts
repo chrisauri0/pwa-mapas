@@ -4,6 +4,8 @@ import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
 const CANAL_LLEGADAS = 'llegadas';
+const CANAL_RECORRIDO = 'recorrido';
+const ID_RECORRIDO = 1001; // fija: así se actualiza o se cancela la misma notificación
 
 @Injectable({ providedIn: 'root' })
 export class ArrivalNotificationService {
@@ -41,6 +43,16 @@ export class ArrivalNotificationService {
         vibration: true,
       });
 
+      // Canal aparte para el recorrido en curso: importancia media (sin sonido molesto en cada actualización)
+      await LocalNotifications.createChannel({
+        id: CANAL_RECORRIDO,
+        name: 'Recorrido en curso',
+        description: 'Te recuerda que tienes un recorrido activo hacia un edificio',
+        importance: 3, // DEFAULT
+        visibility: 1,
+        vibration: false,
+      });
+
       this.listo = true;
       console.log('🔔 Notificaciones listas');
       return true;
@@ -67,6 +79,39 @@ export class ArrivalNotificationService {
       console.log('🔔 Notificación de llegada enviada');
     } catch (e) {
       console.error('❌ Error al enviar la notificación:', e);
+    }
+  }
+
+  /** Notificación fija mientras dura el recorrido; se actualiza con la misma id y se quita al terminar. */
+  async notificarInicio(destino: string, distanciaM: number, minutos: number): Promise<void> {
+    if (!(await this.preparar())) return;
+
+    try {
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            id: ID_RECORRIDO,
+            title: '🧭 Recorrido iniciado',
+            body: `Rumbo a ${destino} · ${Math.round(distanciaM)} m · unos ${minutos} min a pie.`,
+            channelId: CANAL_RECORRIDO,
+            ongoing: true, // no se puede deslizar para quitarla mientras caminas
+            autoCancel: false,
+          },
+        ],
+      });
+      console.log('🔔 Notificación de recorrido iniciada');
+    } catch (e) {
+      console.error('❌ Error al notificar el inicio del recorrido:', e);
+    }
+  }
+
+  /** Quita la notificación fija (al llegar, cancelar o salir de la pantalla). */
+  async cancelarRecorrido(): Promise<void> {
+    if (!this.esNativo) return;
+    try {
+      await LocalNotifications.cancel({ notifications: [{ id: ID_RECORRIDO }] });
+    } catch (e) {
+      console.warn('🔕 No se pudo quitar la notificación del recorrido:', e);
     }
   }
 }

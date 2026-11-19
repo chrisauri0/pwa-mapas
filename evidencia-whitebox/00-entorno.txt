@@ -1,37 +1,25 @@
 ENTORNO DE EJECUCIÓN
-Fecha         : 2026-11-10 18:24:10 CST
+Fecha         : 2026-11-12 16:04:37 CST
 Equipo        : nixos
 Sistema       : Linux 6.18.45 x86_64
 Node          : v22.23.3
 pnpm          : 10.33.0
-Git (commit)  : bfc4953
+Git (commit)  : bedb10b
 Git (rama)    : main
 Cambios sin commit:
-    M angular.json
-    M package.json
-    M pnpm-lock.yaml
-    M src/app/consulta-web/consulta-web.spec.ts
-    M src/app/core/firebase.ts
-    M src/app/core/services/avisos.service.ts
-    M src/app/src/map-component/map-component.ts
-    M src/app/usuarios/usuarios.spec.ts
-   ?? eslint.config.js
-   ?? evidencia-e2e/
-   ?? evidencia-whitebox/
-   ?? firebase.emulator.json
-   ?? firestore-debug.log
-   ?? firestore.test.rules
-   ?? playwright-report/
-   ?? playwright.config.ts
-   ?? src/app/core/services/avisos.logic.spec.ts
-   ?? src/app/core/services/avisos.logic.ts
-   ?? src/app/core/services/avisos.logic.whitebox.spec.ts
-   ?? src/app/core/services/avisos.repository.ts
-   ?? src/app/core/services/ruta.logic.spec.ts
-   ?? src/app/core/services/ruta.logic.ts
-   ?? test-results/
-   ?? tests/
-   ?? undici
-   ?? vitest.integration.config.ts
-   ?? whitebox-fase1-2.sh
+    M evidencia-whitebox/00-entorno.txt
+    D evidencia-whitebox/01-pruebas-unitarias.txt
+    D evidencia-whitebox/02-instalar-cobertura.txt
+    D evidencia-whitebox/03-cobertura.txt
+    D evidencia-whitebox/04-complejidad.txt
+    D evidencia-whitebox/05-lint.txt
+    D evidencia-whitebox/06-tsc.txt
+    D evidencia-whitebox/07-audit.txt
+    D evidencia-whitebox/08-outdated.txt
+    D evidencia-whitebox/09-secretos.txt
+    D evidencia-whitebox/10-archivos-sensibles.txt
+    D evidencia-whitebox/11-version.txt
+    M evidencia-whitebox/reporte-completo.txt
+    M evidencia-whitebox/resumen.txt
+   ?? evidencia-fase3-5/
 

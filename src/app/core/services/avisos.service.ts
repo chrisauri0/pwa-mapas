@@ -8,6 +8,7 @@ import {
   type TipoAviso,
 } from './avisos.logic';
 import { FirestoreAvisosRepo } from './avisos.repository';
+import { mensajeDeError } from './reintento.logic';
 
 // Se re-exportan para que el resto de la app siga importando desde este archivo
 export type { Aviso, TipoAviso } from './avisos.logic';
@@ -78,7 +79,7 @@ export class AvisosService {
       },
       (e) => {
         console.error('🔴 Error al escuchar avisos:', e);
-        this.error.set('No se pudieron cargar los avisos.');
+        this.error.set(mensajeDeError(e, 'cargar los avisos'));
       },
     );
   }
@@ -104,7 +105,7 @@ export class AvisosService {
         .then(() => console.log('🟢 Aviso sincronizado:', id))
         .catch((e) => {
           console.error('🔴 Aviso rechazado:', e);
-          this.error.set('El servidor rechazó el aviso.');
+          this.error.set(mensajeDeError(e, 'publicar el aviso'));
         });
     } catch (e) {
       if (e instanceof AvisoInvalidoError) {
@@ -119,7 +120,7 @@ export class AvisosService {
   eliminar(id: string): void {
     this.repo.eliminar(id).catch((e) => {
       console.error('🔴 No se pudo eliminar:', e);
-      this.error.set('No se pudo eliminar el aviso.');
+      this.error.set(mensajeDeError(e, 'eliminar el aviso'));
     });
   }
 }

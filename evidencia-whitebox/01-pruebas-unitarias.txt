@@ -2,7 +2,7 @@
 ==================================================================
 [01-pruebas-unitarias] Pruebas unitarias y white box (pnpm test:unit)
 Comando : pnpm test:unit
-Inicio  : 2026-11-10 18:24:11 CST
+Inicio  : 2026-11-12 16:04:38 CST
 ==================================================================
 
 > angular-pwa@0.0.0 test:unit /home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas
@@ -27,7 +27,7 @@ vitest-mock-patch.js                            | vitest-mock-patch             
 
                                                 | Initial total                                | 148.89 kB
 
-Application bundle generation complete. [3.271 seconds] - 2026-11-11T00:24:16.705Z
+Application bundle generation complete. [3.342 seconds] - 2026-11-12T22:04:43.827Z
 
 [33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: RouterLink is not used within the template of App[0m [1m[35m[plugin angular-compiler][0m
 
@@ -53,18 +53,18 @@ Application bundle generation complete. [3.271 seconds] - 2026-11-11T00:24:16.70
 
 [1m[30m[46m RUN [49m[39m[22m [36mv4.1.6 [39m[90m/home/chrisauri0/Sdev/school/desarrollo-movil/pwa-mapas[39m
 
- [31m❯[39m [30m[42m angular-pwa [49m[39m src/app/app.spec.ts [2m([22m[2m2 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 100[2mms[22m[39m
-     [32m✓[39m should create the app[32m 74[2mms[22m[39m
+ [31m❯[39m [30m[42m angular-pwa [49m[39m src/app/app.spec.ts [2m([22m[2m2 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 105[2mms[22m[39m
+     [32m✓[39m should create the app[32m 79[2mms[22m[39m
 [31m     [31m×[31m should render title[39m[32m 23[2mms[22m[39m
- [32m✓[39m [30m[42m angular-pwa [49m[39m src/app/core/services/avisos.logic.spec.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 23[2mms[22m[39m
- [31m❯[39m [30m[42m angular-pwa [49m[39m src/app/src/terminos/terminos.spec.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 128[2mms[22m[39m
-[31m     [31m×[31m should create[39m[32m 126[2mms[22m[39m
- [32m✓[39m [30m[42m angular-pwa [49m[39m src/app/core/services/avisos.logic.whitebox.spec.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m [30m[42m angular-pwa [49m[39m src/app/core/services/ruta.logic.spec.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 25[2mms[22m[39m
- [32m✓[39m [30m[42m angular-pwa [49m[39m src/app/consulta-web/consulta-web.spec.ts [2m([22m[2m1 test[22m[2m)[22m[32m 160[2mms[22m[39m
- [32m✓[39m [30m[42m angular-pwa [49m[39m src/app/usuarios/usuarios.spec.ts [2m([22m[2m1 test[22m[2m)[22m[32m 121[2mms[22m[39m
- [31m❯[39m [30m[42m angular-pwa [49m[39m src/app/src/home/home.spec.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 468[2mms[22m[39m
-[31m     [31m×[31m should create[39m[33m 465[2mms[22m[39m
+ [31m❯[39m [30m[42m angular-pwa [49m[39m src/app/src/terminos/terminos.spec.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 125[2mms[22m[39m
+[31m     [31m×[31m should create[39m[32m 122[2mms[22m[39m
+ [31m❯[39m [30m[42m angular-pwa [49m[39m src/app/src/home/home.spec.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 457[2mms[22m[39m
+[31m     [31m×[31m should create[39m[33m 455[2mms[22m[39m
+ [32m✓[39m [30m[42m angular-pwa [49m[39m src/app/core/services/avisos.logic.spec.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m [30m[42m angular-pwa [49m[39m src/app/core/services/avisos.logic.whitebox.spec.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m [30m[42m angular-pwa [49m[39m src/app/consulta-web/consulta-web.spec.ts [2m([22m[2m1 test[22m[2m)[22m[32m 154[2mms[22m[39m
+ [32m✓[39m [30m[42m angular-pwa [49m[39m src/app/core/services/ruta.logic.spec.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m [30m[42m angular-pwa [49m[39m src/app/usuarios/usuarios.spec.ts [2m([22m[2m1 test[22m[2m)[22m[32m 78[2mms[22m[39m
 
 [31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 3 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
 
@@ -99,9 +99,9 @@ Application bundle generation complete. [3.271 seconds] - 2026-11-11T00:24:16.70
 
 [2m Test Files [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (8)[39m
 [2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m82 passed[39m[22m[90m (85)[39m
-[2m   Start at [22m 18:24:16
-[2m   Duration [22m 4.19s[2m (transform 1.31s, setup 1.49s, import 1.71s, tests 1.03s, environment 7.84s)[22m
+[2m   Start at [22m 16:04:44
+[2m   Duration [22m 4.16s[2m (transform 2.25s, setup 1.63s, import 2.62s, tests 969ms, environment 8.43s)[22m
 
  ELIFECYCLE  Command failed with exit code 1.
 ------------------------------------------------------------------
-Código de salida: 1   Duración: 10 s   Fin: 2026-11-10 18:24:21 CST
+Código de salida: 1   Duración: 10 s   Fin: 2026-11-12 16:04:48 CST

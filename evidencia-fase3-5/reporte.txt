@@ -1,0 +1,77 @@
+Práctica 11 · Fases 3 a 5 · mediciones
+Fecha: 2026-11-12T21:43:56.314Z  Proyecto: prac9-db-sync  Node: v22.23.3
+
+🟢 Sesión iniciada con Firebase Auth (326 ms)
+
+== FASE 3 · Códigos HTTP (API REST de Firestore y Auth) ==
+🟢 H3-01 GET lista de avisos sin sesión (lectura pública) → esperado 200, obtenido 200 (493 ms, 3539 B)
+🟢 H3-02 GET documento inexistente → esperado 404, obtenido 404 (206 ms, 179 B)
+🟢 H3-03 POST crear aviso sin sesión → esperado 403, obtenido 403 (172 ms, 127 B)
+🟢 H3-04 POST crear aviso válido con sesión → esperado 200, obtenido 200 (232 ms, 249 B)
+🟢 H3-05 POST aviso con texto de 281 caracteres → esperado 403, obtenido 403 (164 ms, 127 B)
+🟢 H3-06 POST aviso con tipo inválido → esperado 403, obtenido 403 (162 ms, 127 B)
+🟢 H3-07 POST aviso a nombre de otro usuario → esperado 403, obtenido 403 (286 ms, 127 B)
+🟢 H3-08 POST aviso con campo no permitido → esperado 403, obtenido 403 (159 ms, 127 B)
+🟢 H3-09 POST con cuerpo JSON mal formado → esperado 400, obtenido 400 (86 ms, 175 B)
+🟢 H3-10 PATCH (editar) aviso propio → esperado 403, obtenido 403 (364 ms, 127 B)
+🔴 H3-11 DELETE aviso sin sesión → esperado 403, obtenido 200 (156 ms, 3 B)
+🟢 H3-12 Auth: contraseña incorrecta → esperado 400, obtenido 400 (121 ms, 224 B)
+🔴 H3-13 Auth: sin clave de API → esperado 400, obtenido 403 (65 ms, 525 B)
+🟢 H3-14 POST crear aviso con token inválido (no autenticado) → esperado 401, obtenido 401 (84 ms, 579 B)
+🟢 H3-15 La lista pública no expone tokens, contraseñas ni correos. Nota: sí expone autorUid y autorNombre.
+ℹ️  201, 204, 409 y 422 no aplican de forma literal: Firestore responde 200 a crear y borrar, y 409 solo si se pide "no debe existir" (ver Fase 4). 500 no se puede provocar desde el cliente.
+
+== FASE 3 · Ping contra el host y tiempo de respuesta HTTP ==
+🟢 Ping a firestore.googleapis.com (20 paquetes): min 51.201 / prom 54.559 / máx 56.622 ms, pérdida 0 %
+Solicitud | Código HTTP | Tiempo (ms) | Tamaño (bytes)
+        1 |         200 |         161 | 3539
+        2 |         200 |         156 | 3539
+        3 |         200 |         115 | 3539
+        4 |         200 |         139 | 3539
+        5 |         200 |         131 | 3539
+        6 |         200 |         127 | 3539
+        7 |         200 |         136 | 3539
+        8 |         200 |         151 | 3539
+        9 |         200 |         131 | 3539
+       10 |         200 |         141 | 3539
+🟢 GET lista de avisos x10: {"n":10,"min":115.34291700000176,"avg":138.8,"p95":160.63264100000015,"max":160.63264100000015,"bytesMedio":3539}
+🟢 POST crear aviso x5: {"n":5,"min":151.54460400000244,"avg":189.8,"p95":254.4369590000024,"max":254.4369590000024}
+🟢 Tamaño de respuesta por pageSize: {"1":{"bytes":1043,"ms":125},"5":{"bytes":4558,"ms":281},"20":{"bytes":7899,"ms":155},"100":{"bytes":7899,"ms":129}}
+
+== FASE 5 · Tasa de transferencia efectiva: bytes x 8 / (segundos x 1,000,000) ==
+🟢 Descarga 1: 7899 B en 0.109 s → 0.582 Mbps
+🟢 Descarga 2: 7899 B en 0.138 s → 0.459 Mbps
+🟢 Descarga 3: 7899 B en 0.149 s → 0.424 Mbps
+🟢 Subida 1: 100146 B en 0.315 s → 2.541 Mbps (el servidor respondió 403; la tasa incluye la espera de su respuesta)
+🟢 Subida 2: 100146 B en 0.173 s → 4.624 Mbps (el servidor respondió 403; la tasa incluye la espera de su respuesta)
+🟢 Subida 3: 100146 B en 0.181 s → 4.420 Mbps (el servidor respondió 403; la tasa incluye la espera de su respuesta)
+
+== FASE 4 · Tiempo de consulta a la base (3 consultas, 5 repeticiones cada una) ==
+🔴 por id existente: {"n":5,"min":111.60501300000033,"avg":125,"p95":134.33822599999985,"max":134.33822599999985,"http":404}  (objetivo ≤ 200 ms para consulta sencilla)
+🟢 vigentes (expiraEn > ahora), 20: {"n":5,"min":115.32935499999803,"avg":140.1,"p95":163.3663340000021,"max":163.3663340000021,"http":200}  (objetivo ≤ 200 ms para consulta sencilla)
+🟢 por edificio (biblioteca), 20: {"n":5,"min":129.19978300000002,"avg":160.3,"p95":243.05670400000236,"max":243.05670400000236,"http":200}  (objetivo ≤ 200 ms para consulta sencilla)
+
+== FASE 4 · Ciclo de vida de un registro ==
+🟢 Insertar válido → 200
+🟢 Consultar por id después de insertar → 200, texto persistido: "[prueba-wb] ciclo de vida"
+🟢 Actualizar → 403 (las reglas prohíben editar avisos: esperado 403)
+🟢 Eliminar → 200
+🟢 Consultar después de eliminar → 404 (esperado 404)
+
+== FASE 4 · Integridad en la base ==
+🔴 Mismo id enviado dos veces → 200/403, documentos resultantes: 1 (esperado 1)
+🟢 Crear con "no debe existir" sobre un id usado → HTTP 409 (esperado 409 ALREADY_EXISTS)
+
+== FASE 5 · Carga (lecturas) y concurrencia (escrituras) ==
+🟢 1 usuario(s) x 20 GET: {"n":20,"min":116.10999299999821,"avg":169.4,"p95":370.387702,"max":440.4831000000013,"peticiones":20,"fallos":0,"segundos":3.4,"rps":5.9}
+🟢 5 usuario(s) x 20 GET: {"n":100,"min":89.37393200000224,"avg":129.9,"p95":281.46080999999685,"max":385.4962769999984,"peticiones":100,"fallos":0,"segundos":2.78,"rps":36}
+🟢 10 usuario(s) x 20 GET: {"n":200,"min":85.95929500000057,"avg":114.4,"p95":175.18228200000158,"max":508.08608999999706,"peticiones":200,"fallos":0,"segundos":2.61,"rps":76.6}
+🟢 10 escrituras simultáneas: 10 exitosas, 0.15 s
+
+== FASE 5 · Carga de escritura (crear avisos) ==
+🟢 1 usuario(s) x 20 POST: {"n":20,"min":116.86307099999976,"avg":125.9,"p95":139.33213100000285,"max":145.2663210000028,"peticiones":20,"fallos":0,"segundos":2.52,"rps":7.9}
+🟢 5 usuario(s) x 20 POST: {"n":100,"min":100.19007699999929,"avg":131.9,"p95":207.7721690000035,"max":287.44379999999364,"peticiones":100,"fallos":0,"segundos":2.74,"rps":36.5}
+🟢 10 usuario(s) x 20 POST: {"n":200,"min":94.75500699999975,"avg":128.1,"p95":197.48096200000145,"max":467.1601800000062,"peticiones":200,"fallos":0,"segundos":2.82,"rps":70.8}
+
+🟢 Limpieza: 336 de 338 documentos de prueba borrados
+🟡 Borra a mano en la consola los avisos con texto "[prueba-wb]".

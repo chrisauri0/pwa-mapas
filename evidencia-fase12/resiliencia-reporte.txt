@@ -1,0 +1,10 @@
+Práctica 12 · Fase 5 · demostración de resiliencia (servidor local de prueba)
+Fecha: 2026-11-12T23:15:30.646Z  Node: v22.23.4
+
+🟢 RES-03 Servidor sin respuesta: timeout controlado a los 804 ms (límite 800 ms), error deadline-exceeded
+🟢 RES-04 HTTP 500 permanente: 4 intentos, esperas [100,200,400] ms, termina en 719 ms con error 500 (la app sigue estable)
+🟢 RES-05 HTTP 403: 1 intento (no se reintenta un error de permisos)
+🟢 RES-05 HTTP 401: 1 intento (no se reintenta un error de permisos)
+🟢 RES-06 Recuperación: el servicio falló 2 veces (503) y la app obtuvo respuesta en el intento 3; esperas [100,200] ms, total 309 ms
+🟢 RES-07 Escritura con respuesta perdida: el servidor recibió el mismo id 2 veces pero guardó 1 registro (id generado por el cliente = idempotente); 1ª respuesta perdida, 2ª fue HTTP 200
+🟢 RES-08 Respuesta tardía: la 1ª petición (1500 ms) se canceló a los 500 ms; la interfaz aceptó 1 resultado (el del intento 2); la respuesta tardía se descartó

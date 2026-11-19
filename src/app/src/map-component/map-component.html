@@ -1,75 +1,168 @@
 <section class="map-page">
   <main class="map-stage">
     <div id="campus-map"></div>
+
+    <!-- Brújula: toca para encender o apagar. Durante el recorrido se enciende sola. -->
+    <button
+      type="button"
+      class="compass-btn"
+      [class.compass-btn--on]="brujula.activa()"
+      (click)="brujula.alternar()"
+      [attr.aria-label]="brujula.activa() ? 'Apagar brújula' : 'Encender brújula'"
+    >
+      <span class="compass-rose" [style.transform]="'rotate(' + -(brujula.rumbo() ?? 0) + 'deg)'">
+        <span class="compass-n">N</span>
+        <span class="compass-needle"></span>
+      </span>
+      @if (brujula.activa()) {
+        <small>
+          @if (!brujula.disponible()) {
+            Sin sensor
+          } @else if (brujula.rumbo() !== null) {
+            {{ brujula.rumbo() }}°
+          } @else {
+            ...
+          }
+        </small>
+      }
+    </button>
+
+    @if (navegando() && !siguiendo()) {
+      <button type="button" class="recenter-btn" (click)="recentrar()">📍 Recentrar</button>
+    }
   </main>
 
   <footer class="bottom-panel">
+    <div class="panel-handle" aria-hidden="true"></div>
+
     <div class="panel-status" aria-live="polite">
       <span>{{ routeMessage() }}</span>
-      @if (routeDistance() !== null && !llegada()) {
-        <strong>{{ routeDistance() | number:'1.0-0' }} m aprox.</strong>
-      }
     </div>
 
     @if (llegada(); as l) {
       <app-arrival-card [info]="l" />
     }
 
-    @if (navegando()) {
-      <div class="nav-row">
-        <span class="nav-steps">👟 {{ pasosEnPantalla() }} pasos</span>
-        @if (modoDemo) {
-          <button
-            type="button"
-            class="demo-btn"
-            (click)="simulateArrival()"
-            [disabled]="simulando()"
-          >
-            {{ simulando() ? 'Simulando...' : '▶ Simular llegada' }}
+    <!-- 1. Ruta trazada, todavía sin empezar -->
+    @if (rutaLista()) {
+      <section class="trip-card trip-card--ready">
+        <div class="trip-head">
+          <div>
+            <small>Ruta lista</small>
+            <strong>{{ selectedEndNode()?.name }}</strong>
+          </div>
+          <div class="trip-chips">
+            <span class="chip">📏 {{ routeDistance() | number: '1.0-0' }} m</span>
+            <span class="chip">⏱ {{ minutosTotales() }} min</span>
+          </div>
+        </div>
+        <div class="trip-actions">
+          <button type="button" class="btn btn-ghost" (click)="clearSelections()">Cancelar</button>
+          <button type="button" class="btn btn-go" (click)="iniciarRecorrido()">
+            ▶ Iniciar recorrido
           </button>
+        </div>
+      </section>
+    }
+
+    <!-- 2. Recorrido en curso -->
+    @if (navegando()) {
+      <section class="trip-card trip-card--active" aria-live="polite">
+        <div class="trip-head">
+          <div>
+            <small><span class="live-dot"></span> Recorrido en curso</small>
+            <strong>{{ selectedEndNode()?.name }}</strong>
+          </div>
+          <div class="trip-remaining">
+            <b>{{ (restanteM() ?? 0) | number: '1.0-0' }} m</b>
+            <span>~{{ minutosRestantes() }} min</span>
+          </div>
+        </div>
+
+        <div
+          class="progress"
+          role="progressbar"
+          aria-label="Avance del recorrido"
+          [attr.aria-valuenow]="(fraccion() * 100) | number: '1.0-0'"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          <span [style.width.%]="fraccion() * 100"></span>
+        </div>
+
+        <div class="trip-guide">
+          @if (giroFlecha() !== null) {
+            <span class="guide-arrow" [style.transform]="'rotate(' + ((giroFlecha() ?? 0) - 90) + 'deg)'">➤</span>
+            <span class="guide-text">
+              @if (brujula.rumbo() !== null) {
+                Sigue por el camino rojo, rumbo {{ cardinalSiguiente() }}
+              } @else {
+                Rumbo {{ cardinalSiguiente() }}
+              }
+            </span>
+          }
+          <span class="chip">👟 {{ pasosEnPantalla() }} pasos</span>
+        </div>
+
+        @if (fueraDeRuta()) {
+          <p class="off-route">⚠️ Estás a {{ desvioM() | number: '1.0-0' }} m de la ruta. Regresa al camino rojo.</p>
+        }
+
+        <div class="trip-actions">
+          <button type="button" class="btn btn-danger" (click)="clearSelections()">Terminar</button>
+          @if (modoDemo) {
+            <button
+              type="button"
+              class="demo-btn"
+              (click)="simulateArrival()"
+              [disabled]="simulando()"
+            >
+              {{ simulando() ? 'Simulando...' : '▶ Simular llegada' }}
+            </button>
+          }
+        </div>
+      </section>
+    }
+
+    @if (!navegando()) {
+      <div class="search-row">
+        <div class="search-field-wrap">
+          <input
+            type="search"
+            placeholder="¿A dónde quieres ir?"
+            [value]="endQuery()"
+            (input)="updateEndQuery($event)"
+          />
+
+          @if (searchActive() && filteredEndNodes().length > 0) {
+            <div class="node-dropdown">
+              @for (node of filteredEndNodes(); track node.id) {
+                <button type="button" (click)="selectEndNode(node)">
+                  <span>{{ node.name }}</span>
+                  <small>{{ node.type }}</small>
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <button type="button" class="trace-btn" (click)="traceRoute()">Ver ruta</button>
+      </div>
+
+      <div class="panel-meta">
+        <div>
+          <span>Desde</span>
+          <strong>{{ selectedStartNode()?.name || 'Calculando ubicación...' }}</strong>
+        </div>
+        <div>
+          <span>Hasta</span>
+          <strong>{{ selectedEndNode()?.name || 'Sin seleccionar' }}</strong>
+        </div>
+        @if (selectedEndNode()) {
+          <button type="button" class="clear-btn" (click)="clearSelections()" aria-label="Quitar destino">✕</button>
         }
       </div>
     }
-
-    <div class="search-row">
-      <div class="search-field-wrap">
-        <input
-          type="search"
-          placeholder="¿A dónde quieres ir?"
-          [value]="endQuery()"
-          (input)="updateEndQuery($event)"
-        />
-
-        @if (searchActive() && filteredEndNodes().length > 0) {
-          <div class="node-dropdown">
-            @for (node of filteredEndNodes(); track node.id) {
-              <button type="button" (click)="selectEndNode(node)">
-                <span>{{ node.name }}</span>
-                <small>{{ node.type }}</small>
-              </button>
-            }
-          </div>
-        }
-      </div>
-
-      <button type="button" class="trace-btn" (click)="traceRoute()">
-        Ir
-      </button>
-    </div>
-
-    <div class="panel-meta">
-      <div>
-        <span>Desde</span>
-        <strong>{{ selectedStartNode()?.name || 'Calculando ubicación...' }}</strong>
-      </div>
-      <div>
-        <span>Hasta</span>
-        <strong>{{ selectedEndNode()?.name || 'Sin seleccionar' }}</strong>
-      </div>
-      @if (selectedEndNode()) {
-        <button type="button" class="clear-btn" (click)="clearSelections()">✕</button>
-      }
-    </div>
 
     @if (selectedEndNode(); as nodo) {
       <app-avisos-edificio [nodo]="nodo" />

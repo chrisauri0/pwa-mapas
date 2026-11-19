@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  ColaMinima,
   buscarRutaMasCorta,
   construirAdyacencia,
   type AristaGrafo,
@@ -131,5 +132,27 @@ describe('buscarRutaMasCorta: valores límite y excepciones', () => {
     const conDatos = [{ id: 'A', name: 'Entrada' }, { id: 'B', name: 'Biblioteca' }];
     const r = buscarRutaMasCorta(conDatos, [arista('A', 'B', 3)], 'A', 'B');
     expect(r?.nodes[1]).toBe(conDatos[1]);
+  });
+});
+
+describe('ColaMinima (montículo usado por el Dijkstra)', () => {
+  it('extrae siempre el de menor distancia, sin importar el orden de inserción', () => {
+    const cola = new ColaMinima();
+    [['c', 5], ['a', 1], ['d', 9], ['b', 3], ['e', 2]].forEach(([id, d]) => cola.insertar(id as string, d as number));
+    const salida: string[] = [];
+    while (cola.tamano > 0) salida.push(cola.extraerMinimo()!.id);
+    expect(salida).toEqual(['a', 'e', 'b', 'c', 'd']);
+  });
+
+  it('una cola vacía devuelve undefined y no lanza excepción', () => {
+    expect(new ColaMinima().extraerMinimo()).toBe(undefined);
+  });
+
+  it('acepta entradas repetidas del mismo nodo (el Dijkstra descarta las viejas)', () => {
+    const cola = new ColaMinima();
+    cola.insertar('a', 7);
+    cola.insertar('a', 2);
+    expect(cola.extraerMinimo()?.distancia).toBe(2);
+    expect(cola.tamano).toBe(1);
   });
 });

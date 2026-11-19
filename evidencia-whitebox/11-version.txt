@@ -2,39 +2,29 @@
 ==================================================================
 [11-version] Versión del código evaluado
 Comando : git rev-parse --short HEAD && git log -1 --format='%H%n%an%n%ad%n%s' && git status --short
-Inicio  : 2026-11-10 18:24:50 CST
+Inicio  : 2026-11-12 16:05:16 CST
 ==================================================================
-bfc4953
-bfc49530d17151f0b1c7b77e7c24c60ccb7606d4
+bedb10b
+bedb10b44a51751097ff1d354f7dff6d0f884ba0
 chrisauri0
-Tue Nov 3 16:19:56 2026 -0600
-ft: add native-back-window
- M angular.json
+Thu Nov 12 15:43:02 2026 -0600
+whitebox
+ M evidencia-whitebox/00-entorno.txt
+ M evidencia-whitebox/01-pruebas-unitarias.txt
+ M evidencia-whitebox/02-instalar-cobertura.txt
+ M evidencia-whitebox/03-cobertura.txt
+ M evidencia-whitebox/04-complejidad.txt
+ M evidencia-whitebox/05-lint.txt
+ M evidencia-whitebox/06-tsc.txt
+ M evidencia-whitebox/07-audit.txt
+ M evidencia-whitebox/08-outdated.txt
+ M evidencia-whitebox/09-secretos.txt
+ M evidencia-whitebox/10-archivos-sensibles.txt
+ M evidencia-whitebox/11-version.txt
+ M evidencia-whitebox/reporte-completo.txt
+ M evidencia-whitebox/resumen.txt
  M package.json
  M pnpm-lock.yaml
- M src/app/consulta-web/consulta-web.spec.ts
- M src/app/core/firebase.ts
- M src/app/core/services/avisos.service.ts
- M src/app/src/map-component/map-component.ts
- M src/app/usuarios/usuarios.spec.ts
-?? eslint.config.js
-?? evidencia-e2e/
-?? evidencia-whitebox/
-?? firebase.emulator.json
-?? firestore-debug.log
-?? firestore.test.rules
-?? playwright-report/
-?? playwright.config.ts
-?? src/app/core/services/avisos.logic.spec.ts
-?? src/app/core/services/avisos.logic.ts
-?? src/app/core/services/avisos.logic.whitebox.spec.ts
-?? src/app/core/services/avisos.repository.ts
-?? src/app/core/services/ruta.logic.spec.ts
-?? src/app/core/services/ruta.logic.ts
-?? test-results/
-?? tests/
-?? undici
-?? vitest.integration.config.ts
-?? whitebox-fase1-2.sh
+?? evidencia-fase3-5/
 ------------------------------------------------------------------
-Código de salida: 0   Duración: 0 s   Fin: 2026-11-10 18:24:50 CST
+Código de salida: 0   Duración: 0 s   Fin: 2026-11-12 16:05:16 CST

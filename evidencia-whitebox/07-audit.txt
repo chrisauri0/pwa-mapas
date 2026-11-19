@@ -2,7 +2,7 @@
 ==================================================================
 [07-audit] Dependencias con vulnerabilidades conocidas (pnpm audit)
 Comando : pnpm audit
-Inicio  : 2026-11-10 18:24:44 CST
+Inicio  : 2026-11-12 16:05:10 CST
 ==================================================================
 ┌─────────────────────┬────────────────────────────────────────────────────────┐
 │ critical            │ node-tar: Decompression/parse DoS via unlimited input  │
@@ -2402,4 +2402,4 @@ Inicio  : 2026-11-10 18:24:44 CST
 193 vulnerabilities found
 Severity: 21 low | 102 moderate | 67 high | 3 critical
 ------------------------------------------------------------------
-Código de salida: 1   Duración: 2 s   Fin: 2026-11-10 18:24:46 CST
+Código de salida: 1   Duración: 3 s   Fin: 2026-11-12 16:05:13 CST

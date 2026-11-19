@@ -1,0 +1,377 @@
+{
+  "sensibles": [],
+  "codigosHttp": [
+    {
+      "id": "H3-01",
+      "descripcion": "GET lista de avisos sin sesión (lectura pública)",
+      "esperado": 200,
+      "obtenido": 200,
+      "ms": 493,
+      "bytes": 3539
+    },
+    {
+      "id": "H3-02",
+      "descripcion": "GET documento inexistente",
+      "esperado": 404,
+      "obtenido": 404,
+      "ms": 206,
+      "bytes": 179
+    },
+    {
+      "id": "H3-03",
+      "descripcion": "POST crear aviso sin sesión",
+      "esperado": 403,
+      "obtenido": 403,
+      "ms": 172,
+      "bytes": 127
+    },
+    {
+      "id": "H3-04",
+      "descripcion": "POST crear aviso válido con sesión",
+      "esperado": 200,
+      "obtenido": 200,
+      "ms": 232,
+      "bytes": 249
+    },
+    {
+      "id": "H3-05",
+      "descripcion": "POST aviso con texto de 281 caracteres",
+      "esperado": 403,
+      "obtenido": 403,
+      "ms": 164,
+      "bytes": 127
+    },
+    {
+      "id": "H3-06",
+      "descripcion": "POST aviso con tipo inválido",
+      "esperado": 403,
+      "obtenido": 403,
+      "ms": 162,
+      "bytes": 127
+    },
+    {
+      "id": "H3-07",
+      "descripcion": "POST aviso a nombre de otro usuario",
+      "esperado": 403,
+      "obtenido": 403,
+      "ms": 286,
+      "bytes": 127
+    },
+    {
+      "id": "H3-08",
+      "descripcion": "POST aviso con campo no permitido",
+      "esperado": 403,
+      "obtenido": 403,
+      "ms": 159,
+      "bytes": 127
+    },
+    {
+      "id": "H3-09",
+      "descripcion": "POST con cuerpo JSON mal formado",
+      "esperado": 400,
+      "obtenido": 400,
+      "ms": 86,
+      "bytes": 175
+    },
+    {
+      "id": "H3-10",
+      "descripcion": "PATCH (editar) aviso propio",
+      "esperado": 403,
+      "obtenido": 403,
+      "ms": 364,
+      "bytes": 127
+    },
+    {
+      "id": "H3-11",
+      "descripcion": "DELETE aviso sin sesión",
+      "esperado": 403,
+      "obtenido": 200,
+      "ms": 156,
+      "bytes": 3
+    },
+    {
+      "id": "H3-12",
+      "descripcion": "Auth: contraseña incorrecta",
+      "esperado": 400,
+      "obtenido": 400,
+      "ms": 121,
+      "bytes": 224
+    },
+    {
+      "id": "H3-13",
+      "descripcion": "Auth: sin clave de API",
+      "esperado": 400,
+      "obtenido": 403,
+      "ms": 65,
+      "bytes": 525
+    },
+    {
+      "id": "H3-14",
+      "descripcion": "POST crear aviso con token inválido (no autenticado)",
+      "esperado": 401,
+      "obtenido": 401,
+      "ms": 84,
+      "bytes": 579
+    }
+  ],
+  "ping": {
+    "min": 51.201,
+    "avg": 54.559,
+    "max": 56.622,
+    "mdev": 1.585,
+    "perdidaPct": 0
+  },
+  "tabla10": [
+    {
+      "solicitud": 1,
+      "codigo": 200,
+      "ms": 161,
+      "bytes": 3539
+    },
+    {
+      "solicitud": 2,
+      "codigo": 200,
+      "ms": 156,
+      "bytes": 3539
+    },
+    {
+      "solicitud": 3,
+      "codigo": 200,
+      "ms": 115,
+      "bytes": 3539
+    },
+    {
+      "solicitud": 4,
+      "codigo": 200,
+      "ms": 139,
+      "bytes": 3539
+    },
+    {
+      "solicitud": 5,
+      "codigo": 200,
+      "ms": 131,
+      "bytes": 3539
+    },
+    {
+      "solicitud": 6,
+      "codigo": 200,
+      "ms": 127,
+      "bytes": 3539
+    },
+    {
+      "solicitud": 7,
+      "codigo": 200,
+      "ms": 136,
+      "bytes": 3539
+    },
+    {
+      "solicitud": 8,
+      "codigo": 200,
+      "ms": 151,
+      "bytes": 3539
+    },
+    {
+      "solicitud": 9,
+      "codigo": 200,
+      "ms": 131,
+      "bytes": 3539
+    },
+    {
+      "solicitud": 10,
+      "codigo": 200,
+      "ms": 141,
+      "bytes": 3539
+    }
+  ],
+  "latenciaGet": {
+    "n": 10,
+    "min": 115.34291700000176,
+    "avg": 138.8,
+    "p95": 160.63264100000015,
+    "max": 160.63264100000015,
+    "bytesMedio": 3539
+  },
+  "latenciaCrear": {
+    "n": 5,
+    "min": 151.54460400000244,
+    "avg": 189.8,
+    "p95": 254.4369590000024,
+    "max": 254.4369590000024
+  },
+  "tamanoRespuesta": {
+    "1": {
+      "bytes": 1043,
+      "ms": 125
+    },
+    "5": {
+      "bytes": 4558,
+      "ms": 281
+    },
+    "20": {
+      "bytes": 7899,
+      "ms": 155
+    },
+    "100": {
+      "bytes": 7899,
+      "ms": 129
+    }
+  },
+  "descarga": [
+    {
+      "medicion": 1,
+      "bytes": 7899,
+      "segundos": 0.109,
+      "mbps": 0.582
+    },
+    {
+      "medicion": 2,
+      "bytes": 7899,
+      "segundos": 0.138,
+      "mbps": 0.459
+    },
+    {
+      "medicion": 3,
+      "bytes": 7899,
+      "segundos": 0.149,
+      "mbps": 0.424
+    }
+  ],
+  "subida": [
+    {
+      "medicion": 1,
+      "bytes": 100146,
+      "segundos": 0.315,
+      "mbps": 2.541,
+      "httpRechazo": 403
+    },
+    {
+      "medicion": 2,
+      "bytes": 100146,
+      "segundos": 0.173,
+      "mbps": 4.624,
+      "httpRechazo": 403
+    },
+    {
+      "medicion": 3,
+      "bytes": 100146,
+      "segundos": 0.181,
+      "mbps": 4.42,
+      "httpRechazo": 403
+    }
+  ],
+  "consultasDb": {
+    "por id existente": {
+      "n": 5,
+      "min": 111.60501300000033,
+      "avg": 125,
+      "p95": 134.33822599999985,
+      "max": 134.33822599999985,
+      "http": 404
+    },
+    "vigentes (expiraEn > ahora), 20": {
+      "n": 5,
+      "min": 115.32935499999803,
+      "avg": 140.1,
+      "p95": 163.3663340000021,
+      "max": 163.3663340000021,
+      "http": 200
+    },
+    "por edificio (biblioteca), 20": {
+      "n": 5,
+      "min": 129.19978300000002,
+      "avg": 160.3,
+      "p95": 243.05670400000236,
+      "max": 243.05670400000236,
+      "http": 200
+    }
+  },
+  "ciclo": {
+    "crear": 200,
+    "consultaDespues": 200,
+    "textoGuardado": "[prueba-wb] ciclo de vida",
+    "actualizar": 403,
+    "eliminar": 200,
+    "consultaTrasEliminar": 404
+  },
+  "idempotencia": {
+    "envio1": 200,
+    "envio2MismoId": 403,
+    "crearConExistsFalse": 409,
+    "documentosConEseTexto": 1
+  },
+  "carga": {
+    "1": {
+      "n": 20,
+      "min": 116.10999299999821,
+      "avg": 169.4,
+      "p95": 370.387702,
+      "max": 440.4831000000013,
+      "peticiones": 20,
+      "fallos": 0,
+      "segundos": 3.4,
+      "rps": 5.9
+    },
+    "5": {
+      "n": 100,
+      "min": 89.37393200000224,
+      "avg": 129.9,
+      "p95": 281.46080999999685,
+      "max": 385.4962769999984,
+      "peticiones": 100,
+      "fallos": 0,
+      "segundos": 2.78,
+      "rps": 36
+    },
+    "10": {
+      "n": 200,
+      "min": 85.95929500000057,
+      "avg": 114.4,
+      "p95": 175.18228200000158,
+      "max": 508.08608999999706,
+      "peticiones": 200,
+      "fallos": 0,
+      "segundos": 2.61,
+      "rps": 76.6
+    }
+  },
+  "concurrencia": {
+    "escrituras": 10,
+    "exitosas": 10,
+    "segundos": 0.15
+  },
+  "cargaEscritura": {
+    "1": {
+      "n": 20,
+      "min": 116.86307099999976,
+      "avg": 125.9,
+      "p95": 139.33213100000285,
+      "max": 145.2663210000028,
+      "peticiones": 20,
+      "fallos": 0,
+      "segundos": 2.52,
+      "rps": 7.9
+    },
+    "5": {
+      "n": 100,
+      "min": 100.19007699999929,
+      "avg": 131.9,
+      "p95": 207.7721690000035,
+      "max": 287.44379999999364,
+      "peticiones": 100,
+      "fallos": 0,
+      "segundos": 2.74,
+      "rps": 36.5
+    },
+    "10": {
+      "n": 200,
+      "min": 94.75500699999975,
+      "avg": 128.1,
+      "p95": 197.48096200000145,
+      "max": 467.1601800000062,
+      "peticiones": 200,
+      "fallos": 0,
+      "segundos": 2.82,
+      "rps": 70.8
+    }
+  }
+}

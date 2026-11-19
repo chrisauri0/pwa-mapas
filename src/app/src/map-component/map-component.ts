@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { BackButtonService } from '../../core/services/back-button.service';
+import { calcularEsperaMs } from '../../core/services/reintento.logic';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -16,8 +17,18 @@ import {
 import * as L from 'leaflet';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation, Position } from '@capacitor/geolocation';
-import { Haptics, NotificationType } from '@capacitor/haptics';
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { buscarRutaMasCorta } from '../../core/services/ruta.logic';
+import { BrujulaService } from '../../core/services/brujula.service';
+import {
+  Punto,
+  diferenciaAngular,
+  distanciaM,
+  minutosEstimados,
+  progresoEnRuta,
+  rumboHacia,
+  textoCardinal,
+} from '../../core/services/recorrido.logic';
 import { CAMPUS_EDGES, CAMPUS_NODES } from '../hooks/graphs/graph-campus';
 import { CampusNode } from '../hooks/models/models-graph';
 import { CAMPUS_LAYERS } from '../hooks/models/models-map';
@@ -35,6 +46,8 @@ const METROS_POR_PASO = 0.75;
 const VELOCIDAD_CAMINATA_MS = 1.3; // ~4.7 km/h
 const DURACION_DEMO_MS = 5000;
 const INTERVALO_DEMO_MS = 50;
+const DESVIO_AVISO_M = 40; // a partir de aquí se avisa que te saliste de la ruta
+const COLOR_RUTA = '#ef4444';
 
 @Component({
   selector: 'app-map-component',
@@ -48,6 +61,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   private readonly campusSocket = inject(CampusSocketService);
   private readonly notis = inject(ArrivalNotificationService);
   readonly steps = inject(StepCounterService);
+  readonly brujula = inject(BrujulaService);
   readonly avisos = inject(AvisosService);
   private readonly back = inject(BackButtonService);
   private readonly quitarAtras = this.back.registrar(() => this.manejarAtras());
@@ -61,11 +75,15 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   private gpsWatchId?: string;
   private gpsRetryTimer?: ReturnType<typeof setTimeout>;
   private destruido = false;
+  private gpsIntentos = 0;
   private resizeObserver?: ResizeObserver;
   private nodeLayer?: L.LayerGroup;
   private edgeLayer?: L.LayerGroup;
   private avisoLayer?: L.LayerGroup;
   private routeLayer?: L.LayerGroup;
+  /** Línea roja y su borde blanco: se acortan conforme avanzas. */
+  private lineasRuta: L.Polyline[] = [];
+  private tramoActual = 0;
   private selectionLayer?: L.LayerGroup;
 
   private navStart = 0;
@@ -95,6 +113,32 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   readonly pasosSimulados = signal(0);
   readonly llegada = signal<LlegadaInfo | null>(null);
 
+  // ── Recorrido activo ──
+  readonly restanteM = signal<number | null>(null);
+  readonly fraccion = signal(0);
+  readonly desvioM = signal(0);
+  readonly rumboSiguiente = signal<number | null>(null);
+  readonly siguiendo = signal(true);
+
+  /** Hay una ruta trazada pero todavía no empieza el recorrido. */
+  readonly rutaLista = computed(
+    () => this.activeRoute().length > 0 && !this.navegando() && !this.llegada(),
+  );
+  readonly minutosTotales = computed(() => minutosEstimados(this.routeDistance() ?? 0));
+  readonly minutosRestantes = computed(() => minutosEstimados(this.restanteM() ?? 0));
+  readonly fueraDeRuta = computed(() => this.desvioM() > DESVIO_AVISO_M);
+  readonly cardinalSiguiente = computed(() => {
+    const r = this.rumboSiguiente();
+    return r === null ? '' : textoCardinal(r);
+  });
+  /** Giro de la flecha: hacia dónde queda el siguiente punto respecto a donde apunta el teléfono. */
+  readonly giroFlecha = computed(() => {
+    const objetivo = this.rumboSiguiente();
+    const mio = this.brujula.rumbo();
+    if (objetivo === null) return null;
+    return mio === null ? objetivo : diferenciaAngular(mio, objetivo);
+  });
+
   readonly pasosEnPantalla = computed(() =>
     this.simulando() ? this.pasosSimulados() : this.steps.pasos(),
   );
@@ -115,6 +159,9 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.map = L.map('campus-map', { bounceAtZoomLimits: false }).setView([20.656, -100.405], 18);
 
     this.map.createPane('routePane').style.zIndex = '650';
+
+    // Si arrastras el mapa durante el recorrido, deja de seguirte hasta que pulses "Recentrar"
+    this.map.on('dragstart', () => this.zone.run(() => this.siguiendo.set(false)));
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
@@ -151,6 +198,8 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.destruido = true;
     if (this.gpsRetryTimer) clearTimeout(this.gpsRetryTimer);
     this.stopSimulation();
+    this.brujula.detener();
+    void this.notis.cancelarRecorrido();
     if (this.steps.midiendo()) void this.steps.detener();
     if (this.gpsWatchId) void Geolocation.clearWatch({ id: this.gpsWatchId });
     this.resizeObserver?.disconnect();
@@ -238,14 +287,18 @@ export class MapComponent implements AfterViewInit, OnDestroy {
             this.handleGpsError(error);
             const msg = error instanceof Error ? error.message : String(error ?? '');
             if (/in time|timeout/i.test(msg)) {
-              console.log('🔁 Reintentando GPS en 3 s...');
+              // Espera progresiva: 3 s, 6 s, 12 s... hasta 30 s, para no gastar batería reintentando sin señal
+              this.gpsIntentos++;
+              const espera = calcularEsperaMs(this.gpsIntentos, 3000, 30000);
+              console.log(`🔁 Reintentando GPS en ${espera / 1000} s (intento ${this.gpsIntentos})...`);
               if (this.gpsRetryTimer) clearTimeout(this.gpsRetryTimer);
               this.gpsRetryTimer = setTimeout(() => {
                 if (!this.destruido) void this.startWatch();
-              }, 3000);
+              }, espera);
             }
             return;
           }
+          this.gpsIntentos = 0; // hubo señal: el próximo fallo vuelve a empezar en 3 s
           this.onPosition(position);
         });
       },
@@ -274,7 +327,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       this.routeMessage.set('Busca tu destino.');
     }
 
-    this.moveGpsMarker(L.latLng(lat, lng));
+    const pos = L.latLng(lat, lng);
+    this.moveGpsMarker(pos);
+    this.actualizarProgreso(lat, lng);
+    if (this.navegando() && this.siguiendo()) this.map?.panTo(pos, { animate: true });
     this.checkArrival(lat, lng);
   }
 
@@ -286,8 +342,9 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     if (!this.map) return;
 
     this.gpsMarker = L.circleMarker(pos, {
-      radius: 8,
-      color: '#2563eb',
+      radius: 9,
+      color: '#ffffff',
+      weight: 3,
       fillColor: '#2563eb',
       fillOpacity: 1,
     }).addTo(this.map);
@@ -375,20 +432,89 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
   // ── Navegación y llegada ──────────────────────────────────
 
-  private async startNavigation(): Promise<void> {
+  /** Botón "Iniciar recorrido": activa la navegación sobre la ruta ya trazada. */
+  async iniciarRecorrido(): Promise<void> {
+    const end = this.selectedEndNode();
+    if (!end || this.activeRoute().length < 2 || this.navegando()) return;
+    await this.startNavigation(end);
+  }
+
+  private async startNavigation(end: CampusNode): Promise<void> {
     this.stopSimulation();
     this.llegada.set(null);
     this.navegando.set(true);
     this.navStart = Date.now();
-    void this.notis.preparar();
+    this.tramoActual = 0;
+    this.siguiendo.set(true);
+    this.fraccion.set(0);
+    this.desvioM.set(0);
+    this.restanteM.set(this.routeDistance());
+    this.rumboSiguiente.set(this.rumboInicial());
+    this.routeMessage.set(`Recorrido iniciado hacia ${end.name}`);
+
+    // Aviso de inicio: vibración corta + notificación fija mientras dura el recorrido
+    this.brujula.iniciar();
+    void this.vibrarInicio();
+    void this.notis.notificarInicio(end.name, this.routeDistance() ?? 0, this.minutosTotales());
 
     // Reiniciamos el podómetro para contar solo esta ruta.
     // Si no hay permiso, la navegación sigue funcionando sin pasos.
     if (this.steps.midiendo()) await this.steps.detener();
     await this.steps.iniciar();
 
-    // Por si ya estás parado junto al destino
-    if (this.callbackCount() > 0) this.checkArrival(this.debugLat(), this.debugLng());
+    // Si ya hay posición, acomodamos la línea y revisamos si ya estás junto al destino
+    if (this.callbackCount() > 0) {
+      this.actualizarProgreso(this.debugLat(), this.debugLng());
+      this.checkArrival(this.debugLat(), this.debugLng());
+      this.map?.panTo(L.latLng(this.debugLat(), this.debugLng()), { animate: true });
+    }
+  }
+
+  /** Recentra el mapa en tu posición y vuelve a seguirte. */
+  recentrar(): void {
+    this.siguiendo.set(true);
+    const pos = this.gpsMarker?.getLatLng();
+    if (pos) this.map?.panTo(pos, { animate: true });
+  }
+
+  private rumboInicial(): number | null {
+    const ruta = this.activeRoute();
+    if (ruta.length < 2) return null;
+    return rumboHacia(this.aPunto(ruta[0]), this.aPunto(ruta[1]));
+  }
+
+  private aPunto(nodo: CampusNode): Punto {
+    const ll = L.latLng(nodo.coords);
+    return { lat: ll.lat, lng: ll.lng };
+  }
+
+  /** Acorta la línea de la ruta: lo ya recorrido desaparece y solo queda lo que falta. */
+  private actualizarProgreso(lat: number, lng: number): void {
+    const ruta = this.activeRoute();
+    if (!this.navegando() || ruta.length < 2) return;
+
+    const pos: Punto = { lat, lng };
+    const p = progresoEnRuta(ruta.map((n) => this.aPunto(n)), pos, this.tramoActual);
+    if (!p) return;
+
+    // El ruido del GPS no debe "regresar" la línea dentro del mismo tramo
+    const actual = this.restanteM();
+    if (p.tramo === this.tramoActual && actual !== null && p.distanciaRestanteM > actual) {
+      this.desvioM.set(p.desvioM);
+      return;
+    }
+
+    this.tramoActual = p.tramo;
+    this.restanteM.set(p.distanciaRestanteM);
+    this.fraccion.set(p.fraccion);
+    this.desvioM.set(p.desvioM);
+
+    const puntos = p.restante.map((q) => L.latLng(q.lat, q.lng));
+    this.lineasRuta.forEach((l) => l.setLatLngs(puntos));
+
+    // Siguiente punto de la ruta que no esté pegado a ti (a menos de 3 m no sirve para orientarte)
+    const siguiente = p.restante.slice(1).find((q) => distanciaM(pos, q) > 3);
+    this.rumboSiguiente.set(siguiente ? rumboHacia(pos, siguiente) : null);
   }
 
   private checkArrival(lat: number, lng: number): void {
@@ -408,6 +534,9 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     if (!this.navegando() || !end) return;
 
     this.navegando.set(false);
+    this.brujula.detener();
+    void this.notis.cancelarRecorrido();
+    this.vaciarProgreso();
 
     const distancia = Math.round(this.routeDistance() ?? 0);
     const pasos = simulado ? Math.round(distancia / METROS_POR_PASO) : this.steps.pasos();
@@ -427,6 +556,22 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       this.notis.notificarLlegada(end.name, pasos, simulado),
       this.actualizarWidget({ destino: end.name, pasos, distancia, simulado }),
     ]);
+  }
+
+  private async vibrarInicio(): Promise<void> {
+    try {
+      await Haptics.impact({ style: ImpactStyle.Medium });
+    } catch (e) {
+      console.warn('📳 impact() falló:', e);
+    }
+  }
+
+  private vaciarProgreso(): void {
+    this.restanteM.set(null);
+    this.fraccion.set(0);
+    this.desvioM.set(0);
+    this.rumboSiguiente.set(null);
+    this.tramoActual = 0;
   }
 
   private async vibrarLlegada(): Promise<void> {
@@ -481,6 +626,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.pasosSimulados.set(0);
     this.routeMessage.set('Simulando recorrido...');
     this.moveGpsMarker(puntos[0]);
+    this.actualizarProgreso(puntos[0].lat, puntos[0].lng);
 
     this.simTimer = setInterval(() => {
       frame++;
@@ -495,7 +641,9 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       const tramo = acumulado[i] - acumulado[i - 1] || 1;
       const t = Math.min(Math.max((objetivo - (acumulado[i - 1] ?? 0)) / tramo, 0), 1);
 
-      this.moveGpsMarker(L.latLng(a.lat + (b.lat - a.lat) * t, a.lng + (b.lng - a.lng) * t));
+      const simulada = L.latLng(a.lat + (b.lat - a.lat) * t, a.lng + (b.lng - a.lng) * t);
+      this.moveGpsMarker(simulada);
+      this.actualizarProgreso(simulada.lat, simulada.lng);
       this.pasosSimulados.set(Math.round(objetivo / METROS_POR_PASO));
 
       if (frame >= frames) {
@@ -520,6 +668,8 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   }
 
   selectEndNode(node: CampusNode): void {
+    // Cambiar de destino cancela el recorrido en curso y quita la ruta anterior del mapa
+    if (this.navegando() || this.lineasRuta.length > 0) this.clearSelections();
     this.selectedEndId.set(node.id);
     this.endQuery.set(node.name);
     this.searchActive.set(false);
@@ -561,18 +711,21 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.routeMessage.set(
       alerta
         ? `⚠️ Ojo: ${infoTipo(alerta.tipo).etiqueta.toLowerCase()} — ${alerta.texto}`
-        : `Ruta encontrada con ${route.nodes.length} paradas.`,
+        : `Ruta lista con ${route.nodes.length} paradas.`,
     );
 
     this.campusSocket.emitirRutaTrazada(endNode.id, endNode.name, startNode.name, route.distance);
     this.drawRoute(route.nodes);
-    void this.startNavigation();
   }
 
   clearSelections(): void {
     this.stopSimulation();
     this.navegando.set(false);
     this.llegada.set(null);
+    this.brujula.detener();
+    void this.notis.cancelarRecorrido();
+    this.vaciarProgreso();
+    this.lineasRuta = [];
     if (this.steps.midiendo()) void this.steps.detener();
 
     this.selectedEndId.set('');
@@ -674,15 +827,20 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
     if (routeNodes.length === 0) return;
 
-    L.polyline(
-      routeNodes.map((n) => n.coords),
-      {
-        color: '#ef4444',
-        weight: 8,
-        opacity: 1,
-        pane: 'routePane',
-      },
-    ).addTo(this.routeLayer);
+    // Borde blanco debajo + línea roja encima; las dos se acortan al caminar
+    const puntos = routeNodes.map((n) => n.coords);
+    const borde = L.polyline(puntos, { color: '#ffffff', weight: 12, opacity: 0.95, pane: 'routePane' });
+    const linea = L.polyline(puntos, {
+      color: COLOR_RUTA,
+      weight: 7,
+      opacity: 1,
+      lineCap: 'round',
+      lineJoin: 'round',
+      pane: 'routePane',
+    });
+    borde.addTo(this.routeLayer);
+    linea.addTo(this.routeLayer);
+    this.lineasRuta = [borde, linea];
 
     const startNode = routeNodes[0];
     const endNode = routeNodes[routeNodes.length - 1];

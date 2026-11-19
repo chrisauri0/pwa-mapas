@@ -4,7 +4,6 @@ import {
   Component,
   HostListener,
   OnDestroy,
-  OnInit,
   computed,
   inject,
   signal,
@@ -24,7 +23,7 @@ import { CampusSocketService } from '../services/campus-socket.service';
 
 
 
-export class DashboardComponent implements OnInit, OnDestroy {
+export class DashboardComponent implements OnDestroy {
   private readonly edificiosService = inject(EdificiosService);
   private readonly campusSocket = inject(CampusSocketService);
   readonly liveStats = this.campusSocket.stats;
@@ -50,10 +49,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private clockInterval?: ReturnType<typeof setInterval>;
 
-  ngOnInit(): void {
- 
-  }
-
   ngOnDestroy(): void {
     if (this.clockInterval) clearInterval(this.clockInterval);
   }
@@ -64,7 +59,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const total = 4;
     const cols = 2;
     const current = this.focusedIndex();
-    let next = current;
+    let next: number;
 
     switch (event.key) {
       case 'ArrowRight':

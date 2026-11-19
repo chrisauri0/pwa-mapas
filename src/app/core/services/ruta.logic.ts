@@ -38,6 +38,49 @@ export function construirAdyacencia(aristas: readonly AristaGrafo[]): Map<string
   return adyacencia;
 }
 
+/** Montículo binario de mínimos: (id, distancia). Las entradas repetidas se descartan al sacarlas. */
+export class ColaMinima {
+  private readonly datos: { id: string; distancia: number }[] = [];
+
+  get tamano(): number {
+    return this.datos.length;
+  }
+
+  insertar(id: string, distancia: number): void {
+    const d = this.datos;
+    d.push({ id, distancia });
+    let i = d.length - 1;
+    while (i > 0) {
+      const padre = (i - 1) >> 1;
+      if (d[padre].distancia <= d[i].distancia) break;
+      [d[padre], d[i]] = [d[i], d[padre]];
+      i = padre;
+    }
+  }
+
+  extraerMinimo(): { id: string; distancia: number } | undefined {
+    const d = this.datos;
+    if (d.length === 0) return undefined;
+    const minimo = d[0];
+    const ultimo = d.pop();
+    if (d.length > 0 && ultimo) {
+      d[0] = ultimo;
+      let i = 0;
+      for (;;) {
+        const izq = 2 * i + 1;
+        const der = izq + 1;
+        let menor = i;
+        if (izq < d.length && d[izq].distancia < d[menor].distancia) menor = izq;
+        if (der < d.length && d[der].distancia < d[menor].distancia) menor = der;
+        if (menor === i) break;
+        [d[menor], d[i]] = [d[i], d[menor]];
+        i = menor;
+      }
+    }
+    return minimo;
+  }
+}
+
 /**
  * Ruta más corta entre dos nodos. Devuelve null si no hay camino, si el origen no
  * existe en `nodos` o si el destino es inalcanzable. No lanza excepciones.
@@ -52,40 +95,34 @@ export function buscarRutaMasCorta<N extends NodoGrafo>(
   const adyacencia = construirAdyacencia(aristas);
   const distancias = new Map<string, number>();
   const previo = new Map<string, string | null>();
-  const pendientes = new Set<string>();
 
   for (const nodo of nodos) {
     distancias.set(nodo.id, Infinity);
     previo.set(nodo.id, null);
-    pendientes.add(nodo.id);
   }
+  if (!distancias.has(origenId)) return null; // un origen que no está en la lista no llega a nada
   distancias.set(origenId, 0);
 
-  while (pendientes.size > 0) {
-    // Nodo pendiente con la menor distancia conocida
-    let actualId: string | undefined;
-    let actualDistancia = Infinity;
+  // Cola de prioridad (montículo binario): sacar el nodo más cercano cuesta O(log V)
+  // en lugar de recorrer todos los pendientes (O(V)) en cada vuelta.
+  const cola = new ColaMinima();
+  cola.insertar(origenId, 0);
+  const cerrados = new Set<string>();
 
-    for (const id of pendientes) {
-      const d = distancias.get(id) ?? Infinity;
-      if (d < actualDistancia) {
-        actualDistancia = d;
-        actualId = id;
-      }
-    }
+  while (cola.tamano > 0) {
+    const actual = cola.extraerMinimo();
+    if (!actual || cerrados.has(actual.id)) continue; // entrada vieja de un nodo ya cerrado
+    cerrados.add(actual.id);
+    if (actual.id === destinoId) break;
 
-    if (!actualId || actualDistancia === Infinity) break; // lo que queda es inalcanzable
+    for (const { nodeId, distance } of adyacencia.get(actual.id) ?? []) {
+      if (!distancias.has(nodeId) || cerrados.has(nodeId)) continue;
 
-    pendientes.delete(actualId);
-    if (actualId === destinoId) break;
-
-    for (const { nodeId, distance } of adyacencia.get(actualId) ?? []) {
-      if (!pendientes.has(nodeId)) continue;
-
-      const tentativa = actualDistancia + distance;
+      const tentativa = actual.distancia + distance;
       if (tentativa < (distancias.get(nodeId) ?? Infinity)) {
         distancias.set(nodeId, tentativa);
-        previo.set(nodeId, actualId);
+        previo.set(nodeId, actual.id);
+        cola.insertar(nodeId, tentativa);
       }
     }
   }
