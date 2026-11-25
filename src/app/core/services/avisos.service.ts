@@ -9,16 +9,17 @@ import {
 } from './avisos.logic';
 import { FirestoreAvisosRepo } from './avisos.repository';
 import { mensajeDeError } from './reintento.logic';
+import type { NombreIcono } from '../../shared/icono/iconos.data';
 
 // Se re-exportan para que el resto de la app siga importando desde este archivo
 export type { Aviso, TipoAviso } from './avisos.logic';
 
 // En orden de severidad: el primero es el que se muestra en el mapa
-export const TIPOS_AVISO: { id: TipoAviso; icono: string; etiqueta: string }[] = [
-  { id: 'cerrado', icono: '⛔', etiqueta: 'Cerrado' },
-  { id: 'mantenimiento', icono: '🛠️', etiqueta: 'Mantenimiento' },
-  { id: 'evento', icono: '🎉', etiqueta: 'Evento' },
-  { id: 'aviso', icono: '💬', etiqueta: 'Aviso' },
+export const TIPOS_AVISO: { id: TipoAviso; icono: NombreIcono; etiqueta: string }[] = [
+  { id: 'cerrado', icono: 'prohibido', etiqueta: 'Cerrado' },
+  { id: 'mantenimiento', icono: 'mantenimiento', etiqueta: 'Mantenimiento' },
+  { id: 'evento', icono: 'fiesta', etiqueta: 'Evento' },
+  { id: 'aviso', icono: 'mensaje', etiqueta: 'Aviso' },
 ];
 
 export const DURACIONES = [

@@ -18,7 +18,10 @@ import * as L from 'leaflet';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation, Position } from '@capacitor/geolocation';
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
-import { buscarRutaMasCorta } from '../../core/services/ruta.logic';
+import {
+  aristasConDistanciaReal,
+  buscarRutasAlternativas,
+} from '../../core/services/ruta.alternativas.logic';
 import { BrujulaService } from '../../core/services/brujula.service';
 import {
   Punto,
@@ -34,7 +37,10 @@ import { CampusNode } from '../hooks/models/models-graph';
 import { CAMPUS_LAYERS } from '../hooks/models/models-map';
 import { CampusSocketService } from '../services/campus-socket.service';
 import { ArrivalCardComponent, LlegadaInfo } from '../../arrival-card/arrival-card';
-import { AvisosEdificioComponent } from '../avisos-edificio/avisos-edificio';
+import { AvisosModalComponent } from '../avisos-modal/avisos-modal';
+import { Mapa3dComponent } from '../mapa-3d/mapa-3d';
+import { IconoComponent } from '../../shared/icono/icono';
+import { svgIcono } from '../../shared/icono/iconos.data';
 
 import { StepCounterService } from '../../core/services/step-counter.service';
 import { ArrivalNotificationService } from '../../core/services/arrival-notification.service';
@@ -48,10 +54,26 @@ const DURACION_DEMO_MS = 5000;
 const INTERVALO_DEMO_MS = 50;
 const DESVIO_AVISO_M = 40; // a partir de aquí se avisa que te saliste de la ruta
 const COLOR_RUTA = '#ef4444';
+const COLOR_ALTERNATIVA = '#6b7280';
+
+interface RutaPosible {
+  nodes: CampusNode[];
+  distance: number;
+}
+
+// Las distancias de las aristas salen de las coordenadas de los nodos (no de los números escritos a mano
+// en graph-campus.ts, que no coincidían con la realidad). Se calcula una sola vez al cargar.
+const GRAFO = aristasConDistanciaReal(
+  CAMPUS_NODES.map((n) => {
+    const ll = L.latLng(n.coords);
+    return { id: n.id, lat: ll.lat, lng: ll.lng };
+  }),
+  CAMPUS_EDGES,
+);
 
 @Component({
   selector: 'app-map-component',
-  imports: [CommonModule, ArrivalCardComponent, AvisosEdificioComponent],
+  imports: [CommonModule, ArrivalCardComponent, AvisosModalComponent, IconoComponent, Mapa3dComponent],
   templateUrl: './map-component.html',
   styleUrl: './map-component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -71,6 +93,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   readonly modoDemo = isDevMode();
 
   map?: L.Map;
+  private teselas?: L.TileLayer;
   gpsMarker?: L.CircleMarker;
   private gpsWatchId?: string;
   private gpsRetryTimer?: ReturnType<typeof setTimeout>;
@@ -81,6 +104,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   private edgeLayer?: L.LayerGroup;
   private avisoLayer?: L.LayerGroup;
   private routeLayer?: L.LayerGroup;
+  private altLayer?: L.LayerGroup;
   /** Línea roja y su borde blanco: se acortan conforme avanzas. */
   private lineasRuta: L.Polyline[] = [];
   private tramoActual = 0;
@@ -95,7 +119,18 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   readonly callbackCount = signal(0);
 
   readonly nodes = signal<CampusNode[]>([...CAMPUS_NODES]);
-  readonly edges = CAMPUS_EDGES;
+  readonly edges = GRAFO.aristas;
+
+  // ── Rutas alternativas ──
+  /** La más corta primero y, si las hay, alternativas que van por otro lado. */
+  readonly rutasPosibles = signal<RutaPosible[]>([]);
+  readonly rutaElegida = signal(0);
+  /** Las rutas que NO eligiste, para dibujarlas en gris en la vista 3D. */
+  readonly rutasAlternativas = computed(() =>
+    this.rutasPosibles()
+      .filter((_, i) => i !== this.rutaElegida())
+      .map((r) => r.nodes.map((n) => this.aPunto(n))),
+  );
   readonly campusLayers = [...CAMPUS_LAYERS];
 
   readonly searchActive = signal(false);
@@ -139,6 +174,27 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     return mio === null ? objetivo : diferenciaAngular(mio, objetivo);
   });
 
+  // ── Vista 3D (MapLibre) ──
+  /** El 3D es la vista principal. Solo pasa a false si el 3D no puede dibujarse (ver `alFallar3d`). */
+  readonly vista3d = signal(!MapComponent.sinTresDPorPruebas());
+
+  /**
+   * Solo para pruebas E2E: el Chromium sin GPU dibuja el 3D por software y deja la página casi congelada.
+   * Con la bandera E2E_SIN_3D en localStorage la app arranca directo en el mapa 2D (Leaflet).
+   * En el teléfono y en producción la bandera no existe, así que no cambia nada.
+   */
+  private static sinTresDPorPruebas(): boolean {
+    try {
+      return localStorage.getItem('E2E_SIN_3D') === '1';
+    } catch {
+      return false;
+    }
+  }
+  /** Posición actual (GPS real o simulada) para la vista 3D. */
+  readonly posicionActual = signal<Punto | null>(null);
+  readonly rutaCompleta = signal<Punto[]>([]);
+  readonly rutaRestante = signal<Punto[]>([]);
+
   readonly pasosEnPantalla = computed(() =>
     this.simulando() ? this.pasosSimulados() : this.steps.pasos(),
   );
@@ -163,14 +219,18 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     // Si arrastras el mapa durante el recorrido, deja de seguirte hasta que pulses "Recentrar"
     this.map.on('dragstart', () => this.zone.run(() => this.siguiendo.set(false)));
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-      maxZoom: 22,
-    }).addTo(this.map);
+    // El mapa plano ya no se ve (el 3D es el principal): sus tiles de OSM solo se piden si hace falta
+    if (!this.vista3d()) this.asegurarTeselas();
 
     this.nodeLayer = L.layerGroup().addTo(this.map);
     this.edgeLayer = L.layerGroup().addTo(this.map);
     this.avisoLayer = L.layerGroup().addTo(this.map);
+    // Las alternativas van antes que la ruta elegida para quedar debajo de ella
+    this.altLayer = L.layerGroup().addTo(this.map);
+
+    if (GRAFO.descartadas.length > 0) {
+      console.warn('🟡 Aristas con un nodo que no existe (se ignoran):', GRAFO.descartadas);
+    }
 
     // this.loadCampusLayers();
     this.loadNodes();
@@ -189,6 +249,9 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     }
 
     void this.startGps();
+
+    // La vista 3D gira con el teléfono: la brújula queda encendida desde el inicio
+    this.brujula.iniciar();
 
     this.avisos.escuchar();
     this.dibujarAvisos();
@@ -280,7 +343,16 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     }
 
     this.gpsWatchId = await Geolocation.watchPosition(
-      { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 },
+      {
+        enableHighAccuracy: true,
+        timeout: 30000,
+        maximumAge: 5000,
+        // En Capacitor 8 (Android) "interval" vale lo mismo que "timeout" si no se indica: con 30000 el
+        // GPS entregaba una posición cada ~30 s y al caminar el punto parecía congelado.
+        // Para ir a pie pedimos una lectura cada 2 s y dejamos pasar hasta 1 por segundo.
+        interval: 2000,
+        minimumUpdateInterval: 1000,
+      },
       (position, error) => {
         this.zone.run(() => {
           if (error || !position) {
@@ -335,6 +407,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   }
 
   private moveGpsMarker(pos: L.LatLng): void {
+    this.posicionActual.set({ lat: pos.lat, lng: pos.lng });
     if (this.gpsMarker) {
       this.gpsMarker.setLatLng(pos);
       return;
@@ -409,7 +482,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       const principal = infoTipo(lista[0].tipo); // el más severo
       const icono = L.divIcon({
         className: 'aviso-icon',
-        html: `<span>${principal.icono}</span>`,
+        html: `<span>${svgIcono(principal.icono, '16px')}</span>`,
         iconSize: [32, 32],
         iconAnchor: [16, 40],
       });
@@ -419,7 +492,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       popup.className = 'aviso-popup';
       for (const a of lista) {
         const p = document.createElement('p');
-        p.textContent = `${infoTipo(a.tipo).icono} ${a.texto}`;
+        p.textContent = `${infoTipo(a.tipo).etiqueta}: ${a.texto}`;
         popup.appendChild(p);
       }
 
@@ -441,6 +514,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
   private async startNavigation(end: CampusNode): Promise<void> {
     this.stopSimulation();
+    // Ya elegiste tu ruta: las alternativas se quitan del mapa
+    this.altLayer?.clearLayers();
+    this.rutasPosibles.set(this.rutasPosibles().slice(this.rutaElegida(), this.rutaElegida() + 1));
+    this.rutaElegida.set(0);
     this.llegada.set(null);
     this.navegando.set(true);
     this.navStart = Date.now();
@@ -508,6 +585,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.restanteM.set(p.distanciaRestanteM);
     this.fraccion.set(p.fraccion);
     this.desvioM.set(p.desvioM);
+    this.rutaRestante.set(p.restante);
 
     const puntos = p.restante.map((q) => L.latLng(q.lat, q.lng));
     this.lineasRuta.forEach((l) => l.setLatLngs(puntos));
@@ -534,7 +612,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     if (!this.navegando() || !end) return;
 
     this.navegando.set(false);
-    this.brujula.detener();
+    if (!this.vista3d()) this.brujula.detener();
     void this.notis.cancelarRecorrido();
     this.vaciarProgreso();
 
@@ -607,6 +685,46 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  // ── Vista 3D ──────────────────────────────────────────────
+
+  /** El 3D no pudo dibujarse (sin WebGL, etc.): se muestra el mapa plano de siempre para no dejar la app vacía. */
+  alFallar3d(motivo: string): void {
+    if (!this.vista3d()) return;
+    console.warn('🟡 3D no disponible, se usa el mapa plano:', motivo);
+    this.vista3d.set(false);
+    this.asegurarTeselas();
+    this.brujula.detener();
+    // El mapa plano estuvo oculto: que Leaflet recalcule su tamaño
+    setTimeout(() => this.map?.invalidateSize(), 0);
+  }
+
+  private asegurarTeselas(): void {
+    if (!this.map || this.teselas) return;
+    this.teselas = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 22,
+    }).addTo(this.map);
+  }
+
+  /** Tocaron un edificio en la vista 3D: se elige como destino (no mientras vas caminando). */
+  alTocarEdificio(nodoId: string): void {
+    const nodo = this.findNodeById(nodoId);
+    if (!nodo || this.navegando()) return;
+    this.selectEndNode(nodo);
+  }
+
+  /** Desde el modal de avisos: "Ir" elige ese edificio como destino. */
+  alIrAEdificio(nodoId: string): void {
+    const nodo = this.findNodeById(nodoId);
+    if (!nodo || this.navegando()) return;
+    this.selectEndNode(nodo);
+  }
+
+  /** Arrastraron el mapa 3D: deja de seguirte hasta que pulses "Recentrar". */
+  alMoverMapa3d(): void {
+    this.siguiendo.set(false);
+  }
+
   // ── Demo: recorre la ruta en el mapa sin caminar ──────────
 
   simulateArrival(): void {
@@ -676,6 +794,9 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.routeMessage.set('');
     this.routeDistance.set(null);
     this.activeRoute.set([]);
+    this.rutasPosibles.set([]);
+    this.rutaElegida.set(0);
+    this.altLayer?.clearLayers();
     this.llegada.set(null);
   }
 
@@ -689,18 +810,25 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       this.routeMessage.set('Espera la señal GPS o selecciona un destino.');
       this.routeDistance.set(null);
       this.activeRoute.set([]);
+      this.rutasPosibles.set([]);
       return;
     }
 
-    const route = this.findShortestRoute(startNode.id, endNode.id);
+    const rutas = buscarRutasAlternativas<CampusNode>(this.nodes(), this.edges, startNode.id, endNode.id, {
+      maximo: 3,
+    });
+    const route = rutas[0];
 
     if (!route) {
       this.routeMessage.set('No hay un trazado disponible entre esos nodos.');
       this.routeDistance.set(null);
       this.activeRoute.set([]);
+      this.rutasPosibles.set([]);
       return;
     }
 
+    this.rutasPosibles.set(rutas);
+    this.rutaElegida.set(0);
     this.activeRoute.set(route.nodes);
     this.routeDistance.set(route.distance);
 
@@ -710,7 +838,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     );
     this.routeMessage.set(
       alerta
-        ? `⚠️ Ojo: ${infoTipo(alerta.tipo).etiqueta.toLowerCase()} — ${alerta.texto}`
+        ? `Ojo: ${infoTipo(alerta.tipo).etiqueta.toLowerCase()} — ${alerta.texto}`
         : `Ruta lista con ${route.nodes.length} paradas.`,
     );
 
@@ -718,13 +846,34 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.drawRoute(route.nodes);
   }
 
+  /** Cambia a otra de las rutas posibles (la más corta o una alternativa). */
+  elegirRuta(indice: number): void {
+    const ruta = this.rutasPosibles()[indice];
+    if (!ruta || this.navegando() || indice === this.rutaElegida()) return;
+
+    this.rutaElegida.set(indice);
+    this.activeRoute.set(ruta.nodes);
+    this.routeDistance.set(ruta.distance);
+    this.drawRoute(ruta.nodes, false);
+  }
+
+  minutosDe(metros: number): number {
+    return minutosEstimados(metros);
+  }
+
   clearSelections(): void {
     this.stopSimulation();
     this.navegando.set(false);
     this.llegada.set(null);
-    this.brujula.detener();
+    // En la vista 3D la brújula sigue girando el mapa aunque termines el recorrido
+    if (!this.vista3d()) this.brujula.detener();
     void this.notis.cancelarRecorrido();
     this.vaciarProgreso();
+    this.rutaCompleta.set([]);
+    this.rutaRestante.set([]);
+    this.rutasPosibles.set([]);
+    this.rutaElegida.set(0);
+    this.altLayer?.clearLayers();
     this.lineasRuta = [];
     if (this.steps.midiendo()) void this.steps.detener();
 
@@ -812,20 +961,32 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     return this.nodes().find((node) => node.id === nodeId);
   }
 
-  private findShortestRoute(
-    startId: string,
-    endId: string,
-  ): { nodes: CampusNode[]; distance: number } | null {
-    return buscarRutaMasCorta(this.nodes(), this.edges, startId, endId);
-  }
-
-  private drawRoute(routeNodes: CampusNode[]): void {
+  private drawRoute(routeNodes: CampusNode[], ajustarVista = true): void {
     if (!this.map || !this.routeLayer || !this.selectionLayer) return;
 
     this.routeLayer.clearLayers();
     this.selectionLayer.clearLayers();
+    this.altLayer?.clearLayers();
 
     if (routeNodes.length === 0) return;
+
+    // Alternativas en gris y punteadas; tocar una la elige
+    if (this.altLayer) {
+      const capa = this.altLayer;
+      this.rutasPosibles().forEach((r, i) => {
+        if (i === this.rutaElegida()) return;
+        L.polyline(
+          r.nodes.map((n) => n.coords),
+          { color: COLOR_ALTERNATIVA, weight: 6, opacity: 0.85, dashArray: '10 10', pane: 'routePane' },
+        )
+          .on('click', () => this.zone.run(() => this.elegirRuta(i)))
+          .addTo(capa);
+      });
+    }
+
+    const completa = routeNodes.map((n) => this.aPunto(n));
+    this.rutaCompleta.set(completa);
+    this.rutaRestante.set(completa);
 
     // Borde blanco debajo + línea roja encima; las dos se acortan al caminar
     const puntos = routeNodes.map((n) => n.coords);
@@ -867,7 +1028,11 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       .bindPopup(`Llegada: ${endNode.name}`)
       .addTo(this.selectionLayer);
 
-    const bounds = L.latLngBounds(routeNodes.map((n) => n.coords as L.LatLngExpression));
-    this.map.fitBounds(bounds, { padding: [40, 40] });
+    if (ajustarVista) {
+      // La vista abarca la ruta y también sus alternativas
+      const todos = [routeNodes, ...this.rutasPosibles().map((r) => r.nodes)].flat();
+      const bounds = L.latLngBounds(todos.map((n) => n.coords as L.LatLngExpression));
+      this.map.fitBounds(bounds, { padding: [40, 40] });
+    }
   }
 }

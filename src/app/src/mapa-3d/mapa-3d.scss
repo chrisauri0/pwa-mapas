@@ -1,0 +1,134 @@
+// Este componente usa ViewEncapsulation.None porque MapLibre crea elementos (marcadores) por su cuenta
+// y los estilos con encapsulación no les llegarían. Por eso todo va colgado de .mapa3d.
+
+// OJO: con ViewEncapsulation.None ":host" no funciona, por eso se usa el nombre del elemento
+app-mapa-3d {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.mapa3d-aviso {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  transform: translateX(-50%);
+  z-index: 5;
+  max-width: 70%;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+
+  &--error {
+    background: #fef2f2;
+    color: #991b1b;
+  }
+}
+
+.mapa3d {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  background: #eef3ea;
+
+  // Texto de OpenStreetMap: chico y discreto
+  .maplibregl-ctrl-attrib {
+    font-size: 10px;
+  }
+
+  // ── Tu posición: punto azul con un cono que apunta hacia donde mira el teléfono ──
+  .gps3d {
+    position: relative;
+    width: 22px;
+    height: 22px;
+  }
+
+  .gps3d-punto {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: #2563eb;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.35), 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+
+  .gps3d-cono {
+    position: absolute;
+    left: 50%;
+    bottom: 50%;
+    width: 0;
+    height: 0;
+    transform: translateX(-50%);
+    border-left: 16px solid transparent;
+    border-right: 16px solid transparent;
+    border-bottom: 38px solid rgba(37, 99, 235, 0.38);
+    pointer-events: none;
+
+    &.gps3d-cono--oculto {
+      display: none;
+    }
+  }
+
+  // ── Nombre de cada edificio ──
+  .etq3d {
+    padding: 2px 8px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #374151;
+    font: 700 11px/1.35 system-ui, sans-serif;
+    white-space: nowrap;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+
+    &--sin-nodo {
+      cursor: default;
+      opacity: 0.85;
+    }
+
+    &--destino {
+      background: #dc2626;
+      color: #fff;
+      font-size: 12px;
+      padding: 3px 10px;
+    }
+
+    &--oculta {
+      display: none;
+    }
+  }
+
+  // Con el mapa muy alejado los nombres se amontonan; el elegido siempre se queda
+  &.mapa3d--lejos .etq3d:not(.etq3d--destino) {
+    display: none;
+  }
+
+  // ── Etiqueta del destino ──
+  .dest3d {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 100%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #dc2626;
+    }
+  }
+}

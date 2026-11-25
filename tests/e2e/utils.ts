@@ -76,6 +76,7 @@ export async function usarEmuladores(context: BrowserContext): Promise<void> {
   await context.addInitScript(() => {
     try {
       localStorage.setItem('USE_FIREBASE_EMULATOR', '1');
+      localStorage.setItem('E2E_SIN_3D', '1'); // mapa 2D: el 3D por software congela el navegador de pruebas
     } catch {
       /* sin localStorage */
     }
@@ -139,7 +140,7 @@ export async function seleccionarEdificio(page: Page, nombre?: string): Promise<
     if (hayResultados) {
       const elegido = (await opcion.locator('span').first().innerText()).trim();
       await opcion.click();
-      await expect(page.locator('app-avisos-edificio')).toBeVisible();
+      await expect(page.locator('.search-field-wrap .clear-btn')).toBeVisible(); // el destino quedó elegido
       return elegido;
     }
   }
@@ -147,8 +148,8 @@ export async function seleccionarEdificio(page: Page, nombre?: string): Promise<
 }
 
 export async function abrirAvisos(page: Page): Promise<void> {
-  await page.locator('app-avisos-edificio .cabecera').click();
-  await expect(page.locator('app-avisos-edificio .cuerpo')).toBeVisible();
+  await page.locator('app-avisos-modal .avisos-btn').click();
+  await expect(page.locator('app-avisos-modal .cuerpo')).toBeVisible();
 }
 
 /** Sesión + mapa + edificio + panel de avisos abierto, listo para publicar. */
@@ -160,8 +161,8 @@ export async function entrarAlPanel(page: Page, email: string): Promise<string> 
 }
 
 export async function abrirFormularioAviso(page: Page): Promise<void> {
-  await page.locator('app-avisos-edificio .agregar', { hasText: 'Agregar aviso' }).click();
-  await expect(page.locator('app-avisos-edificio textarea')).toBeVisible();
+  await page.locator('app-avisos-modal .agregar', { hasText: 'Agregar aviso' }).click();
+  await expect(page.locator('app-avisos-modal textarea')).toBeVisible();
 }
 
 /** Extrae el nombre de "Sesión: {nombre} · Salir". */

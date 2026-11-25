@@ -51,7 +51,7 @@ test('RF-01: registrar una cuenta deja la sesión iniciada con el nombre captura
   await page.waitForURL((url) => url.pathname === RUTA_MAPA);
   const edificio = await seleccionarEdificio(page);
   await abrirAvisos(page);
-  await expect(page.locator('app-avisos-edificio .sesion')).toContainText(`Sesión: ${NOMBRE}`);
+  await expect(page.locator('app-avisos-modal .sesion')).toContainText(`Sesión: ${NOMBRE}`);
   await captura(page, 'cn-rf01-02-sesion-tras-registro');
 
   // La sesión y el nombre sobreviven a una recarga
@@ -59,7 +59,7 @@ test('RF-01: registrar una cuenta deja la sesión iniciada con el nombre captura
   await irAlMapa(page);
   await seleccionarEdificio(page, edificio);
   await abrirAvisos(page);
-  await expect(page.locator('app-avisos-edificio .sesion')).toContainText(`Sesión: ${NOMBRE}`);
+  await expect(page.locator('app-avisos-modal .sesion')).toContainText(`Sesión: ${NOMBRE}`);
 });
 
 test('RF-09: el registro rechaza correo sin formato, contraseña corta y correo repetido', async ({ page }) => {
@@ -128,14 +128,14 @@ test('RF-14: "Salir" cierra la sesión y vuelve a ofrecer iniciar sesión', asyn
   const { email } = await prepararUsuario(page, 'e2e-salir');
   await entrarAlPanel(page, email);
 
-  const sesion = page.locator('app-avisos-edificio .sesion');
+  const sesion = page.locator('app-avisos-modal .sesion');
   await expect(sesion).toContainText('Sesión:');
   await captura(page, 'cn-rf14-01-con-sesion');
 
   await sesion.getByRole('link', { name: 'Salir' }).click();
 
   await expect(
-    page.locator('app-avisos-edificio .agregar', { hasText: 'Inicia sesión para dejar un aviso' }),
+    page.locator('app-avisos-modal .agregar', { hasText: 'Inicia sesión para dejar un aviso' }),
   ).toBeVisible();
   await expect(sesion).toHaveCount(0);
   await captura(page, 'cn-rf14-02-sin-sesion');
@@ -156,7 +156,7 @@ test('DEF-01: registrarse con el nombre en blanco no deja un nombre vacío ni in
 
   const edificio = await seleccionarEdificio(page);
   await abrirAvisos(page);
-  const sesion = page.locator('app-avisos-edificio .sesion');
+  const sesion = page.locator('app-avisos-modal .sesion');
   const antes = nombreEnSesion(await sesion.innerText());
   await captura(page, 'cn-def01-01-antes-de-recargar');
 
@@ -179,8 +179,8 @@ test('RF-07: no se puede publicar un aviso sin texto (vacío o solo espacios)', 
   await entrarAlPanel(page, email);
   await abrirFormularioAviso(page);
 
-  const area = page.locator('app-avisos-edificio textarea');
-  const publicar = page.locator('app-avisos-edificio .publicar');
+  const area = page.locator('app-avisos-modal textarea');
+  const publicar = page.locator('app-avisos-modal .publicar');
 
   await expect(publicar).toBeDisabled(); // vacío
   await captura(page, 'cn-rf07-01-vacio');
@@ -203,7 +203,7 @@ test('RF-08: el texto se limita a 280 caracteres y un aviso de 280 se guarda com
   await entrarAlPanel(page, email);
   await abrirFormularioAviso(page);
 
-  const area = page.locator('app-avisos-edificio textarea');
+  const area = page.locator('app-avisos-modal textarea');
   await expect(area).toHaveAttribute('maxlength', '280');
 
   // Se teclea (no se usa fill) porque el límite solo aplica a la escritura del usuario
@@ -211,10 +211,10 @@ test('RF-08: el texto se limita a 280 caracteres y un aviso de 280 se guarda com
   await area.pressSequentially('a'.repeat(290));
 
   await expect(area).toHaveValue('a'.repeat(280));
-  await expect(page.locator('app-avisos-edificio .pie small')).toHaveText('280/280');
+  await expect(page.locator('app-avisos-modal .pie small')).toHaveText('280/280');
   await captura(page, 'cn-rf08-01-limite-280');
 
-  await page.locator('app-avisos-edificio .publicar').click();
+  await page.locator('app-avisos-modal .publicar').click();
 
   await expect.poll(async () => (await avisosEnServidor()).length, { timeout: 15_000 }).toBe(1);
   const [guardado] = await avisosEnServidor();
@@ -233,10 +233,10 @@ test('RF-16: sin conexión el aviso queda pendiente y se sincroniza al reconecta
   await test.step('Sin internet: se publica y queda como pendiente', async () => {
     await context.setOffline(true);
     await abrirFormularioAviso(page);
-    await page.locator('app-avisos-edificio textarea').fill(TEXTO);
-    await page.locator('app-avisos-edificio .publicar').click();
+    await page.locator('app-avisos-modal textarea').fill(TEXTO);
+    await page.locator('app-avisos-modal .publicar').click();
 
-    const tarjeta = page.locator('app-avisos-edificio .aviso');
+    const tarjeta = page.locator('app-avisos-modal .aviso');
     await expect(tarjeta).toContainText(TEXTO);
     await expect(tarjeta.locator('.pendiente')).toBeVisible();
     expect(await avisosEnServidor()).toHaveLength(0); // aún no llega al servidor
@@ -258,7 +258,7 @@ test('RF-16: sin conexión el aviso queda pendiente y se sincroniza al reconecta
     await irAlMapa(page);
     await seleccionarEdificio(page, edificio);
     await abrirAvisos(page);
-    const tarjeta = page.locator('app-avisos-edificio .aviso');
+    const tarjeta = page.locator('app-avisos-modal .aviso');
     await expect(tarjeta).toContainText(TEXTO);
     await expect(tarjeta.locator('.pendiente')).toHaveCount(0);
     await captura(page, 'cn-rf16-02-sincronizado');

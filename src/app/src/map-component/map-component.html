@@ -1,34 +1,36 @@
 <section class="map-page">
   <main class="map-stage">
-    <div id="campus-map"></div>
+    <div id="campus-map" [class.map-oculto]="vista3d()"></div>
 
-    <!-- Brújula: toca para encender o apagar. Durante el recorrido se enciende sola. -->
-    <button
-      type="button"
-      class="compass-btn"
-      [class.compass-btn--on]="brujula.activa()"
-      (click)="brujula.alternar()"
-      [attr.aria-label]="brujula.activa() ? 'Apagar brújula' : 'Encender brújula'"
-    >
-      <span class="compass-rose" [style.transform]="'rotate(' + -(brujula.rumbo() ?? 0) + 'deg)'">
-        <span class="compass-n">N</span>
-        <span class="compass-needle"></span>
-      </span>
-      @if (brujula.activa()) {
-        <small>
-          @if (!brujula.disponible()) {
-            Sin sensor
-          } @else if (brujula.rumbo() !== null) {
-            {{ brujula.rumbo() }}°
-          } @else {
-            ...
-          }
-        </small>
-      }
-    </button>
+    <!-- Vista 3D (MapLibre): es la vista principal. Tapa al mapa plano, que queda debajo como respaldo si el 3D falla. -->
+    @if (vista3d()) {
+      <app-mapa-3d
+        class="capa-3d"
+        [posicion]="posicionActual()"
+        [rumbo]="brujula.rumbo()"
+        [rutaCompleta]="rutaCompleta()"
+        [rutaRestante]="rutaRestante()"
+        [rutasAlternativas]="rutasAlternativas()"
+        [destinoId]="selectedEndId()"
+        [destinoNombre]="selectedEndNode()?.name ?? ''"
+        [navegando]="navegando()"
+        [siguiendo]="siguiendo()"
+        (edificioTocado)="alTocarEdificio($event)"
+        (mapaMovido)="alMoverMapa3d()"
+        (fallo)="alFallar3d($event)"
+      />
+    }
+
+    <!-- Avisos de todo el campus: botón arriba a la derecha y su modal -->
+    <app-avisos-modal
+      [nodos]="nodes()"
+      [destinoId]="selectedEndId()"
+      [permitirIr]="!navegando()"
+      (irA)="alIrAEdificio($event)"
+    />
 
     @if (navegando() && !siguiendo()) {
-      <button type="button" class="recenter-btn" (click)="recentrar()">📍 Recentrar</button>
+      <button type="button" class="recenter-btn" (click)="recentrar()"><app-icono nombre="ubicacion" /> Recentrar</button>
     }
   </main>
 
@@ -52,14 +54,30 @@
             <strong>{{ selectedEndNode()?.name }}</strong>
           </div>
           <div class="trip-chips">
-            <span class="chip">📏 {{ routeDistance() | number: '1.0-0' }} m</span>
-            <span class="chip">⏱ {{ minutosTotales() }} min</span>
+            <span class="chip"><app-icono nombre="regla" /> {{ routeDistance() | number: '1.0-0' }} m</span>
+            <span class="chip"><app-icono nombre="cronometro" /> {{ minutosTotales() }} min</span>
           </div>
         </div>
+        @if (rutasPosibles().length > 1) {
+          <div class="route-options">
+            @for (r of rutasPosibles(); track $index) {
+              <button
+                type="button"
+                class="route-opt"
+                [class.route-opt--on]="rutaElegida() === $index"
+                [attr.aria-pressed]="rutaElegida() === $index"
+                (click)="elegirRuta($index)"
+              >
+                <b>{{ $index === 0 ? 'Más corta' : 'Alternativa ' + $index }}</b>
+                <span>{{ r.distance | number: '1.0-0' }} m · {{ minutosDe(r.distance) }} min</span>
+              </button>
+            }
+          </div>
+        }
         <div class="trip-actions">
           <button type="button" class="btn btn-ghost" (click)="clearSelections()">Cancelar</button>
           <button type="button" class="btn btn-go" (click)="iniciarRecorrido()">
-            ▶ Iniciar recorrido
+            <app-icono nombre="reproducir" /> Iniciar recorrido
           </button>
         </div>
       </section>
@@ -92,7 +110,7 @@
 
         <div class="trip-guide">
           @if (giroFlecha() !== null) {
-            <span class="guide-arrow" [style.transform]="'rotate(' + ((giroFlecha() ?? 0) - 90) + 'deg)'">➤</span>
+            <span class="guide-arrow" [style.transform]="'rotate(' + ((giroFlecha() ?? 0) - 90) + 'deg)'"><app-icono nombre="flecha" /></span>
             <span class="guide-text">
               @if (brujula.rumbo() !== null) {
                 Sigue por el camino rojo, rumbo {{ cardinalSiguiente() }}
@@ -101,11 +119,11 @@
               }
             </span>
           }
-          <span class="chip">👟 {{ pasosEnPantalla() }} pasos</span>
+          <span class="chip"><app-icono nombre="pasos" /> {{ pasosEnPantalla() }} pasos</span>
         </div>
 
         @if (fueraDeRuta()) {
-          <p class="off-route">⚠️ Estás a {{ desvioM() | number: '1.0-0' }} m de la ruta. Regresa al camino rojo.</p>
+          <p class="off-route"><app-icono nombre="alerta" /> Estás a {{ desvioM() | number: '1.0-0' }} m de la ruta. Regresa al camino rojo.</p>
         }
 
         <div class="trip-actions">
@@ -117,7 +135,7 @@
               (click)="simulateArrival()"
               [disabled]="simulando()"
             >
-              {{ simulando() ? 'Simulando...' : '▶ Simular llegada' }}
+              @if (simulando()) { Simulando... } @else { <app-icono nombre="reproducir" /> Simular llegada }
             </button>
           }
         </div>
@@ -134,6 +152,10 @@
             (input)="updateEndQuery($event)"
           />
 
+          @if (selectedEndNode() || endQuery()) {
+            <button type="button" class="clear-btn" (click)="clearSelections()" aria-label="Borrar búsqueda y quitar destino"><app-icono nombre="cerrar" /></button>
+          }
+
           @if (searchActive() && filteredEndNodes().length > 0) {
             <div class="node-dropdown">
               @for (node of filteredEndNodes(); track node.id) {
@@ -149,27 +171,10 @@
         <button type="button" class="trace-btn" (click)="traceRoute()">Ver ruta</button>
       </div>
 
-      <div class="panel-meta">
-        <div>
-          <span>Desde</span>
-          <strong>{{ selectedStartNode()?.name || 'Calculando ubicación...' }}</strong>
-        </div>
-        <div>
-          <span>Hasta</span>
-          <strong>{{ selectedEndNode()?.name || 'Sin seleccionar' }}</strong>
-        </div>
-        @if (selectedEndNode()) {
-          <button type="button" class="clear-btn" (click)="clearSelections()" aria-label="Quitar destino">✕</button>
-        }
-      </div>
-    }
-
-    @if (selectedEndNode(); as nodo) {
-      <app-avisos-edificio [nodo]="nodo" />
     }
 
     @if (!avisos.sincronizado()) {
-      <small class="offline-tag">📴 Sin conexión: mostrando avisos guardados</small>
+      <small class="offline-tag"><app-icono nombre="sinConexion" /> Sin conexión: mostrando avisos guardados</small>
     }
   </footer>
 </section>

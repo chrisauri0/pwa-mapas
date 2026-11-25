@@ -6,3 +6,16 @@ html, body {
   padding: 0;
   box-sizing: border-box;
 }
+
+// Marcador de avisos en el mapa plano (Leaflet lo crea fuera de los componentes, por eso va aquí)
+.aviso-icon span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fff;
+  color: #dc2626;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}

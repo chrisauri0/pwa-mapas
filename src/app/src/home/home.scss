@@ -20,7 +20,10 @@
 }
 
 .btn-prueba {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 0.75rem 1rem;
   border-radius: 10px;
   background: #2563eb;
@@ -102,6 +105,8 @@
 
   .contact-icon {
     font-size: 20px;
+    color: #00c2ff;
+    padding-top: 2px;
   }
 }
 
@@ -470,6 +475,7 @@ button {
 .icon {
   font-size: 2rem;
   margin-bottom: 1rem;
+  color: #00c2ff; // el acento de la página (antes el color lo ponía el emoji)
 }
 
 .feature-card h3 {

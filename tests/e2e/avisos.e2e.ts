@@ -88,6 +88,7 @@ async function usarEmuladores(context: BrowserContext): Promise<void> {
   await context.addInitScript(() => {
     try {
       localStorage.setItem('USE_FIREBASE_EMULATOR', '1');
+      localStorage.setItem('E2E_SIN_3D', '1'); // mapa 2D: el 3D por software congela el navegador de pruebas
     } catch {
       /* sin localStorage */
     }
@@ -126,7 +127,7 @@ async function seleccionarEdificio(page: Page, nombre?: string): Promise<string>
     if (hayResultados) {
       const elegido = (await opcion.locator('span').first().innerText()).trim();
       await opcion.click();
-      await expect(page.locator('app-avisos-edificio')).toBeVisible();
+      await expect(page.locator('.search-field-wrap .clear-btn')).toBeVisible(); // el destino quedó elegido
       return elegido;
     }
   }
@@ -134,8 +135,8 @@ async function seleccionarEdificio(page: Page, nombre?: string): Promise<string>
 }
 
 async function abrirAvisos(page: Page): Promise<void> {
-  await page.locator('app-avisos-edificio .cabecera').click();
-  await expect(page.locator('app-avisos-edificio .cuerpo')).toBeVisible();
+  await page.locator('app-avisos-modal .avisos-btn').click();
+  await expect(page.locator('app-avisos-modal .cuerpo')).toBeVisible();
 }
 
 async function nuevoVisitante(browser: Browser): Promise<{ context: BrowserContext; page: Page }> {
@@ -177,20 +178,20 @@ test('E2E: login -> publicar aviso -> persiste -> lo ve un visitante -> eliminar
     await irAlMapa(page);
     edificio = await seleccionarEdificio(page);
     await abrirAvisos(page);
-    await expect(page.locator('app-avisos-edificio .vacio')).toBeVisible(); // base limpia
-    await expect(page.locator('app-avisos-edificio .sesion')).toContainText('Sesión:');
+    await expect(page.locator('app-avisos-modal .vacio')).toBeVisible(); // base limpia
+    await expect(page.locator('app-avisos-modal .sesion')).toContainText('Sesión:');
     await captura(page, '02-edificio-sin-avisos');
   });
 
   await test.step('3. Publicar un aviso de tipo "Cerrado"', async () => {
-    await page.locator('app-avisos-edificio .agregar', { hasText: 'Agregar aviso' }).click();
-    await page.locator('app-avisos-edificio .tipos button', { hasText: 'Cerrado' }).click();
-    await page.locator('app-avisos-edificio textarea').fill(TEXTO);
+    await page.locator('app-avisos-modal .agregar', { hasText: 'Agregar aviso' }).click();
+    await page.locator('app-avisos-modal .tipos button', { hasText: 'Cerrado' }).click();
+    await page.locator('app-avisos-modal textarea').fill(TEXTO);
     await captura(page, '03-formulario-lleno');
-    await page.locator('app-avisos-edificio .publicar').click();
+    await page.locator('app-avisos-modal .publicar').click();
   });
 
-  const tarjeta = page.locator('app-avisos-edificio .aviso[data-tipo="cerrado"]');
+  const tarjeta = page.locator('app-avisos-modal .aviso[data-tipo="cerrado"]');
 
   await test.step('4. El aviso aparece en pantalla', async () => {
     await expect(tarjeta).toContainText(TEXTO);
@@ -223,7 +224,7 @@ test('E2E: login -> publicar aviso -> persiste -> lo ve un visitante -> eliminar
       await irAlMapa(visitante.page);
       await seleccionarEdificio(visitante.page, edificio);
       await abrirAvisos(visitante.page);
-      const suya = visitante.page.locator('app-avisos-edificio .aviso[data-tipo="cerrado"]');
+      const suya = visitante.page.locator('app-avisos-modal .aviso[data-tipo="cerrado"]');
       await expect(suya).toContainText(TEXTO);
       await expect(suya.getByRole('button', { name: 'Eliminar' })).toHaveCount(0);
       await captura(visitante.page, '06-visitante-ve-el-aviso');
@@ -235,7 +236,7 @@ test('E2E: login -> publicar aviso -> persiste -> lo ve un visitante -> eliminar
   await test.step('8. El autor elimina el aviso y desaparece de pantalla y del servidor', async () => {
     await tarjeta.getByRole('button', { name: 'Eliminar' }).click();
     await expect(tarjeta).toHaveCount(0);
-    await expect(page.locator('app-avisos-edificio .vacio')).toBeVisible();
+    await expect(page.locator('app-avisos-modal .vacio')).toBeVisible();
     await expect.poll(async () => (await avisosEnServidor()).length, { timeout: 15_000 }).toBe(0);
     await captura(page, '07-aviso-eliminado');
   });
@@ -246,8 +247,8 @@ test('E2E: un visitante sin sesión no puede publicar y se le manda a iniciar se
   await seleccionarEdificio(page);
   await abrirAvisos(page);
 
-  await expect(page.locator('app-avisos-edificio .agregar', { hasText: 'Agregar aviso' })).toHaveCount(0);
-  const iniciar = page.locator('app-avisos-edificio .agregar', { hasText: 'Inicia sesión' });
+  await expect(page.locator('app-avisos-modal .agregar', { hasText: 'Agregar aviso' })).toHaveCount(0);
+  const iniciar = page.locator('app-avisos-modal .agregar', { hasText: 'Inicia sesión' });
   await expect(iniciar).toBeVisible();
   await captura(page, '08-visitante-sin-opcion-de-publicar');
 

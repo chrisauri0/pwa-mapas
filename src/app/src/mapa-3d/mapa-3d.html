@@ -1,0 +1,11 @@
+<div #contenedor class="mapa3d" role="img" aria-label="Mapa del campus en 3D"></div>
+
+@if (estado() !== 'listo') {
+  <p class="mapa3d-aviso" [class.mapa3d-aviso--error]="estado() === 'error'" role="status">
+    @if (estado() === 'cargando') {
+      Cargando el mapa 3D...
+    } @else {
+      No se pudo dibujar el 3D. {{ detalle() }}
+    }
+  </p>
+}
